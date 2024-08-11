@@ -9,6 +9,8 @@ from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
 from django.conf import settings
 from mutagen import File as MutagenFile
+from voice_writer.lib.transcription import VoiceTranscriber
+
 
 VOICE_FILE_DIR = 'user_uploads/voice_files'
 VOICE_FILE_BASE_PATH = os.path.join(settings.MEDIA_ROOT, VOICE_FILE_DIR)
@@ -43,10 +45,31 @@ class VoiceRecording(models.Model):
     def __str__(self):
         return self.title
 
+    def transcribe(self):
+        # transcribe the audio recording use OpenAI whisper
+        transcription = VoiceTranscriber(voice_recording=self).transcribe()
+        breakpoint()
+        # Save the transcription to a file
+        upload_path_for_transcription = upload_path(self)
+        transcription_file_path = os.path.join(
+            upload_path_for_transcription,
+            "transcription.srt"
+        )
+        with open(transcription_file_path, "w") as f:
+            f.write(transcription)
+        # Create and save a VoiceTranscription model
+        voice_transcription = VoiceTranscription(
+            recording=self,
+            file=transcription_file_path,
+            transcription=transcription
+        )
+        voice_transcription.save()
+
 
 class VoiceTranscription(models.Model):
     recording = models.ForeignKey(VoiceRecording, on_delete=models.CASCADE)
     provider = models.CharField(max_length=255, default='whisper')
+    transcription = models.TextField(blank=True, null=True)
     file = models.FileField(
         upload_to='unprocessed/voice_transcriptions',
         blank=True
@@ -138,8 +161,7 @@ def move_file_to_upload_path(instance):
 
 
 @receiver(post_save, sender=VoiceRecording)
-@receiver(post_save, sender=VoiceTranscription)
 def post_save_signal_handler(sender, instance, **kwargs):
     move_file_to_upload_path(instance)
     extract_audio_metadata(instance)
-
+    # instance.transcribe()

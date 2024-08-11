@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.conf import settings
+import datetime
 
 from .models import (
     User,
@@ -13,7 +14,7 @@ from .models import (
 
 # VOICE RECORDING ADMIN
 class VoiceRecordingAdmin(admin.ModelAdmin):
-    exclude = ('file_size', 'duration', 'bitrate')
+    exclude = ('file_size', 'duration', 'bitrate', 'original_filename')
     list_display = (
         'title',
         'description',
@@ -56,24 +57,27 @@ class VoiceRecordingAdmin(admin.ModelAdmin):
         # I'm not sure why this keeps including the whole base path
         # so I'm just going to hack it out
         hack_url = obj.file.url.replace((str(settings.BASE_DIR)+"/media"), "")
-        return format_html(f'<a href="{hack_url}">Download</a>')
+        return format_html(f'<a href="{hack_url}">{obj.original_filename}</a>')
+    file_url_display.description = 'Download'
 
     def file_size_display(self, obj):
         # Display file size in a more readable format
-        size = obj.file_size
-        for unit in ['bytes', 'KB', 'MB', 'GB']:
-            if size < 1024:
-                return f"{size:.2f} {unit}"
-            size /= 1024
-        return f"{size:.2f} TB"
+        if obj.file_size:
+            size = obj.file_size
+            for unit in ['bytes', 'KB', 'MB', 'GB']:
+                if size < 1024:
+                    return f"{size:.2f} {unit}"
+                size /= 1024
+            return f"{size:.2f} TB"
+    file_size_display.short_description = 'File Size'
 
     def duration_display(self, obj):
-        # Display duration in a more readable format
-        size = obj.duration
-        return f"{round(size, 2)} seconds"
+        if obj.duration:
+            # Display duration in a more readable format
+            duration = datetime.timedelta(seconds=obj.duration)
+            return duration
     duration_display.short_description = 'Duration'
 
-    file_size_display.short_description = 'File Size'
     audio_player.short_description = 'Audio Player'
     audio_player.allow_tags = True
 
