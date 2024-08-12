@@ -11,6 +11,7 @@ from django.conf import settings
 from mutagen import File as MutagenFile
 from voice_writer.lib.transcription import VoiceTranscriber
 from voice_writer.lib.summarize import TranscriptionSummarizer
+from voice_writer.tasks.voice import transcribe_voice_recording
 
 
 VOICE_FILE_DIR = 'user_uploads/voice_files'
@@ -45,7 +46,10 @@ class VoiceRecording(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.title
+        if self.title:
+            return self.title
+        else:
+            return "Voice Recording"
 
     @property
     def upload_path(self):
@@ -73,6 +77,9 @@ class VoiceRecording(models.Model):
         # Summarize the transcription and update records
         voice_transcription.summarize()
 
+    def async_transcribe(self):
+        transcribe_voice_recording.delay(self.id)
+
 
 class VoiceTranscription(models.Model):
     recording = models.ForeignKey(
@@ -92,7 +99,10 @@ class VoiceTranscription(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Transcription for {self.recording.title}"
+        if self.recording.title:
+            return f"{self.recording.title} - Transcription"
+        else:
+            return "Transcription"
 
     @property
     def user(self):
@@ -150,7 +160,7 @@ def upload_path(instance) -> str:
 
 # Extract audio metadata using the Mutagen library
 def extract_audio_metadata(instance):
-    if hasattr(instance, 'duration'):
+    if hasattr(instance, 'duration') and not instance.duration:
         audio = MutagenFile(instance.file)
         if audio and audio.info:
             instance.duration = audio.info.length
@@ -204,7 +214,8 @@ def move_file_to_upload_path(instance):
 
 
 @receiver(post_save, sender=VoiceRecording)
-def post_save_signal_handler(sender, instance, **kwargs):
-    move_file_to_upload_path(instance)
-    extract_audio_metadata(instance)
-    instance.transcribe()
+def post_save_signal_handler(sender, instance, created, **kwargs):
+    if created:
+        move_file_to_upload_path(instance)
+        extract_audio_metadata(instance)
+        instance.async_transcribe()

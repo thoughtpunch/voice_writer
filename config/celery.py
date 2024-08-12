@@ -4,7 +4,7 @@ import os
 from celery import Celery
 
 # Set the default Django settings module for the 'celery' program.
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'voice_writer.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 
 app = Celery('voice_writer')
 
