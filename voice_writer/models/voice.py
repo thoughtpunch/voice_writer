@@ -10,6 +10,7 @@ from django.dispatch import receiver
 from django.conf import settings
 from mutagen import File as MutagenFile
 from voice_writer.lib.transcription import VoiceTranscriber
+from voice_writer.lib.summarize import TranscriptionSummarizer
 
 
 VOICE_FILE_DIR = 'user_uploads/voice_files'
@@ -26,7 +27,7 @@ class VoiceRecordingStorage(FileSystemStorage):
 
 class VoiceRecording(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    title = models.CharField(max_length=255)
+    title = models.CharField(max_length=255, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     duration = models.FloatField(blank=True, null=True)
     bitrate = models.IntegerField(blank=True, null=True)
@@ -38,6 +39,7 @@ class VoiceRecording(models.Model):
         blank=True
     )
     original_filename = models.CharField(max_length=255, blank=True, null=True)
+    keywords = models.JSONField(blank=True, null=True)
     metadata = models.JSONField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -45,45 +47,86 @@ class VoiceRecording(models.Model):
     def __str__(self):
         return self.title
 
+    @property
+    def upload_path(self):
+        return upload_path(self)
+
+    @property
+    def relative_local_path(self):
+        return self.file.path.replace(str(settings.BASE_DIR), '')
+
     def transcribe(self):
         # transcribe the audio recording use OpenAI whisper
-        transcription = VoiceTranscriber(voice_recording=self).transcribe()
-        breakpoint()
-        # Save the transcription to a file
-        upload_path_for_transcription = upload_path(self)
-        transcription_file_path = os.path.join(
-            upload_path_for_transcription,
-            "transcription.srt"
-        )
-        with open(transcription_file_path, "w") as f:
-            f.write(transcription)
+        transcription = VoiceTranscriber(
+            audio_file_path=self.file.path,
+            upload_path=self.upload_path,
+        ).transcribe()
+
         # Create and save a VoiceTranscription model
         voice_transcription = VoiceTranscription(
             recording=self,
-            file=transcription_file_path,
-            transcription=transcription
+            file=transcription.transcription_file_path,
+            transcription=transcription.transcription['text'],
+            metadata=transcription.transcription
         )
         voice_transcription.save()
+        # Summarize the transcription and update records
+        voice_transcription.summarize()
 
 
 class VoiceTranscription(models.Model):
-    recording = models.ForeignKey(VoiceRecording, on_delete=models.CASCADE)
+    recording = models.ForeignKey(
+        VoiceRecording,
+        on_delete=models.CASCADE,
+        related_name='transcriptions'
+    )
     provider = models.CharField(max_length=255, default='whisper')
     transcription = models.TextField(blank=True, null=True)
     file = models.FileField(
         upload_to='unprocessed/voice_transcriptions',
         blank=True
     )
+    keywords = models.JSONField(blank=True, null=True)
     metadata = models.JSONField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Transcription for {self.recording.title} by {self.provider.name}"
+        return f"Transcription for {self.recording.title}"
 
     @property
     def user(self):
         return self.recording.user
+
+    @property
+    def upload_path(self):
+        return upload_path(self)
+
+    @property
+    def relative_local_path(self):
+        return self.file.path.replace(str(settings.BASE_DIR), '')
+
+    def summarize(self):
+        if self.transcription:
+            summarizer = TranscriptionSummarizer(
+                transcription=self.transcription
+            )
+            summary = summarizer.summarize()
+            # Set local attributes
+            if not self.keywords:
+                self.keywords = summary.get('keywords')
+            if not self.metadata:
+                self.metadata = summary
+            self.save()
+            # Set related attributes
+            if not self.recording.keywords:
+                self.recording.keywords = summary.get('keywords')
+            if not self.recording.title:
+                self.recording.title = summary.get('title')
+            if not self.recording.description:
+                self.recording.description = summary.get('summary')
+            self.recording.save()
+        return summary
 
 
 # Return a unified path for both the audio recording and the transcription
@@ -164,4 +207,4 @@ def move_file_to_upload_path(instance):
 def post_save_signal_handler(sender, instance, **kwargs):
     move_file_to_upload_path(instance)
     extract_audio_metadata(instance)
-    # instance.transcribe()
+    instance.transcribe()

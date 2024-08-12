@@ -41,23 +41,21 @@ class VoiceRecordingAdmin(admin.ModelAdmin):
 
     def audio_player(self, obj):
         # I'm not sure why this keeps including the whole base path
-        # so I'm just going to hack it out
-        hack_url = obj.file.url.replace((str(settings.BASE_DIR)+"/media"), "")
+        # so I'm just going to hack it out for now
         if obj.file:
             return format_html(
                 '<audio controls>'
                 '<source src="{}" type="audio/mpeg">'
                 'Your browser does not support the audio element.'
                 '</audio>',
-                hack_url
+                obj.relative_local_path
             )
         return "No audio file"
 
     def file_url_display(self, obj):
         # I'm not sure why this keeps including the whole base path
-        # so I'm just going to hack it out
-        hack_url = obj.file.url.replace((str(settings.BASE_DIR)+"/media"), "")
-        return format_html(f'<a href="{hack_url}">{obj.original_filename}</a>')
+        # so I'm just going to hack it out for now
+        return obj.relative_local_path
     file_url_display.description = 'Download'
 
     def file_size_display(self, obj):

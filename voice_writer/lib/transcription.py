@@ -2,37 +2,47 @@ import whisper
 from whisper.utils import get_writer
 from typing import Optional
 
+
 class VoiceTranscriber:
-    def __init__(self, audio_file, upload_path):
-        self.audio_file = audio_file
+    def __init__(self, audio_file_path: str, upload_path: str):
+        self.audio_file_path = audio_file_path
+        self.transcription_file_path = None
         self.upload_path = upload_path
         self.transcription = None
-        self.provider = 'whisper'
 
-    def transcribe(self):
+    def transcribe(self, save_to_file: Optional[bool] = True):
         # Load the audio file from the VoiceRecording model
-        audio_file_path = self.audio_file.path
         model = whisper.load_model("base")
         result = model.transcribe(
-            audio_file_path,
+            self.audio_file_path,
             word_timestamps=True,
             language="en",
             task="transcribe"
         )
         self.transcription = result
 
-        return self.transcription["text"]
+        # write to SRT file if asked
+        if save_to_file:
+            self.save_srt_file()
+
+        return self
 
     def save_srt_file(self, options: Optional[dict] = {}):
-        # Save the transcription to a file
-        vtt_writer = get_writer(
-            output_format='srt',
-            output_dir=self.upload_path
-        )
-        vtt_writer(
-            result=self.transcription,  # type: ignore
-            audio_path=self.audio_file.path,
-            options=options
-        )
-
+        if self.transcription:
+            # Save the transcription to a file
+            vtt_writer = get_writer(
+                output_format='srt',
+                output_dir=self.upload_path
+            )
+            vtt_writer(
+                result=self.transcription,  # type: ignore
+                audio_path=self.audio_file_path,
+                options=options
+            )
+            audio_file_path_without_ext = self.audio_file_path.split(".")[0]
+            srt_file_path = f"{audio_file_path_without_ext}.srt"
+            self.transcription_file_path = srt_file_path
+            return srt_file_path
+        else:
+            raise Exception("Transcribe the audio file first")
 
