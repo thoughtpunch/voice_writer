@@ -33,6 +33,8 @@ ALLOWED_HOSTS = []
 # FILE UPLOADS
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
+USER_UPLOADS_PATH = 'user_uploads'
+USER_UPLOADS_ROOT = os.path.join(MEDIA_ROOT, USER_UPLOADS_PATH)
 
 # PYTHON SHELL
 SHELL_PLUS = "bpython"
@@ -93,6 +95,7 @@ DATABASES = {
     }
 }
 
+AUTH_USER_MODEL = 'voice_writer.User'
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators

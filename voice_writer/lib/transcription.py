@@ -4,10 +4,10 @@ from typing import Optional
 
 
 class VoiceTranscriber:
-    def __init__(self, audio_file_path: str, upload_path: str):
+    def __init__(self, audio_file_path: str, user_upload_path: str):
         self.audio_file_path = audio_file_path
         self.transcription_file_path = None
-        self.upload_path = upload_path
+        self.user_upload_path = user_upload_path
         self.transcription = None
 
     def transcribe(self, save_to_file: Optional[bool] = True):
@@ -32,7 +32,7 @@ class VoiceTranscriber:
             # Save the transcription to a file
             vtt_writer = get_writer(
                 output_format='srt',
-                output_dir=self.upload_path
+                output_dir=self.user_upload_path
             )
             vtt_writer(
                 result=self.transcription,  # type: ignore

@@ -4,6 +4,7 @@ from django.conf import settings
 import datetime
 
 from .models import (
+    Author,
     User,
     VoiceRecording,
     VoiceTranscription,
@@ -11,6 +12,15 @@ from .models import (
     Section,
     Document
 )
+
+
+class VoiceTranscriptionInline(admin.TabularInline):
+    model = VoiceTranscription
+    extra = 0  # Number of empty forms to display by default
+    exclude = ['file']
+    fields = ['transcription','keywords', 'metadata', 'created_at']
+    readonly_fields = ['keywords', 'metadata', 'created_at', 'created_at']
+
 
 # VOICE RECORDING ADMIN
 class VoiceRecordingAdmin(admin.ModelAdmin):
@@ -38,6 +48,7 @@ class VoiceRecordingAdmin(admin.ModelAdmin):
         'created_at',
         'updated_at'
     )
+    inlines = [VoiceTranscriptionInline]
 
     def audio_player(self, obj):
         # I'm not sure why this keeps including the whole base path
@@ -80,6 +91,8 @@ class VoiceRecordingAdmin(admin.ModelAdmin):
     audio_player.allow_tags = True
 
 
+# REGISTER ADMIN MODELS
+admin.site.register(Author)
 admin.site.register(User)
 admin.site.register(VoiceRecording, VoiceRecordingAdmin)
 admin.site.register(VoiceTranscription)

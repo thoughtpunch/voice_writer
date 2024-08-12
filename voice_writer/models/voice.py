@@ -1,21 +1,18 @@
 import os
 import re
-import shutil
-import unicodedata
 from django.db import models
 from django.core.files.storage import FileSystemStorage
-from django.contrib.auth.models import User
-from django.db.models.signals import pre_save, post_save
+from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.conf import settings
-from mutagen import File as MutagenFile
 from voice_writer.lib.transcription import VoiceTranscriber
 from voice_writer.lib.summarize import TranscriptionSummarizer
+from voice_writer.utils.file import (
+    move_uploads_to_user_upload_path,
+    user_upload_path,
+)
+from voice_writer.utils.audio import extract_audio_metadata
 from voice_writer.tasks.voice import transcribe_voice_recording
-
-
-VOICE_FILE_DIR = 'user_uploads/voice_files'
-VOICE_FILE_BASE_PATH = os.path.join(settings.MEDIA_ROOT, VOICE_FILE_DIR)
 
 
 class VoiceRecordingStorage(FileSystemStorage):
@@ -27,7 +24,7 @@ class VoiceRecordingStorage(FileSystemStorage):
 
 
 class VoiceRecording(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     title = models.CharField(max_length=255, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     duration = models.FloatField(blank=True, null=True)
@@ -35,7 +32,7 @@ class VoiceRecording(models.Model):
     file_size = models.PositiveIntegerField(blank=True, null=True)
     format = models.CharField(max_length=50, blank=True, null=True)
     file = models.FileField(
-        upload_to='unprocessed/voice_recordings',
+        upload_to=f"{settings.USER_UPLOADS_PATH}/unprocessed/voice",
         storage=VoiceRecordingStorage(),
         blank=True
     )
@@ -52,10 +49,6 @@ class VoiceRecording(models.Model):
             return "Voice Recording"
 
     @property
-    def upload_path(self):
-        return upload_path(self)
-
-    @property
     def relative_local_path(self):
         return self.file.path.replace(str(settings.BASE_DIR), '')
 
@@ -63,7 +56,7 @@ class VoiceRecording(models.Model):
         # transcribe the audio recording use OpenAI whisper
         transcription = VoiceTranscriber(
             audio_file_path=self.file.path,
-            upload_path=self.upload_path,
+            user_upload_path=user_upload_path(self)
         ).transcribe()
 
         # Create and save a VoiceTranscription model
@@ -90,7 +83,7 @@ class VoiceTranscription(models.Model):
     provider = models.CharField(max_length=255, default='whisper')
     transcription = models.TextField(blank=True, null=True)
     file = models.FileField(
-        upload_to='unprocessed/voice_transcriptions',
+        upload_to=f"{settings.USER_UPLOADS_PATH}/unprocessed/transcripts",
         blank=True
     )
     keywords = models.JSONField(blank=True, null=True)
@@ -100,7 +93,7 @@ class VoiceTranscription(models.Model):
 
     def __str__(self):
         if self.recording.title:
-            return f"{self.recording.title} - Transcription"
+            return f"{self.recording.title} - Transcription for Recording#{self.recording.id}"
         else:
             return "Transcription"
 
@@ -109,26 +102,33 @@ class VoiceTranscription(models.Model):
         return self.recording.user
 
     @property
-    def upload_path(self):
-        return upload_path(self)
-
-    @property
     def relative_local_path(self):
         return self.file.path.replace(str(settings.BASE_DIR), '')
 
     def summarize(self):
-        if self.transcription:
+        if self.transcription and self.user:
+            # Use the filename as the title if it's not set
+            if self.recording.title:
+                summary_title = self.recording.title
+            else:
+                summary_title = os.path.basename(
+                    self.recording.file.name
+                ).split('.')[0]
+            cleaned_summary_title = re.sub(r'\W+', ' ', summary_title).strip()
+            # Summarize the transcription with OpenAI
             summarizer = TranscriptionSummarizer(
+                author=f"{self.user.first_name} {self.user.last_name}",
+                title=cleaned_summary_title.lower(),
                 transcription=self.transcription
             )
             summary = summarizer.summarize()
-            # Set local attributes
+            # Set local attributes from AI summarization
             if not self.keywords:
                 self.keywords = summary.get('keywords')
             if not self.metadata:
                 self.metadata = summary
             self.save()
-            # Set related attributes
+            # Set related attributes from AI summarization
             if not self.recording.keywords:
                 self.recording.keywords = summary.get('keywords')
             if not self.recording.title:
@@ -139,83 +139,15 @@ class VoiceTranscription(models.Model):
         return summary
 
 
-# Return a unified path for both the audio recording and the transcription
-def upload_path(instance) -> str:
-    if instance.user:
-        user_id = instance.user.id
-        if isinstance(instance, VoiceRecording):
-            recording_id = instance.id
-        else:
-            recording_id = instance.recording.id
-
-        path_segments = [
-            VOICE_FILE_BASE_PATH,
-            f'user_{user_id}',
-            f'recording_{recording_id}',
-        ]
-        return os.path.join(*path_segments)
-    else:
-        raise ValueError("User must be set before saving the instance")
-
-
-# Extract audio metadata using the Mutagen library
-def extract_audio_metadata(instance):
-    if hasattr(instance, 'duration') and not instance.duration:
-        audio = MutagenFile(instance.file)
-        if audio and audio.info:
-            instance.duration = audio.info.length
-            instance.bitrate = audio.info.bitrate // 1000  # Convert to kbps
-            instance.file_size = instance.file.size
-            instance.format = instance.file.name.split('.')[-1].upper()
-            instance.save()
-
-
-# Sanitize the file name to remove any special characters and
-#  ensure can be slugified for use in URLs
-def sanitize_filename(filename):
-    # Normalize the text to remove accents and diacritics
-    text = unicodedata.normalize('NFKD', filename).encode('ascii', 'ignore').decode('ascii')
-    # Convert to lowercase
-    text = text.lower()
-    # Replace any non-alphanumeric character with a hyphen
-    text = re.sub(r'[^a-z0-9]+', '_', text)
-    # Strip leading and trailing hyphens
-    text = text.strip('-')
-    return text
-
-
-# Move both the original audio recording and the transcription
-#  to the same directory as we want to keep them together
-def move_file_to_upload_path(instance):
-    if instance.file:
-        if instance.file.path.startswith(VOICE_FILE_BASE_PATH):
-            return instance.file.path
-        else:
-            # Define the original and new paths
-            old_path = instance.file.path
-            # Sanitize the name and prep to store in new path
-            base_name = os.path.basename(instance.file.path)
-            file_name, ext = os.path.splitext(base_name)
-            sanitized_filename = f"{sanitize_filename(file_name)}{ext}"
-            new_dir = os.path.join(VOICE_FILE_BASE_PATH, upload_path(instance))
-            new_path = os.path.join(new_dir, sanitized_filename)
-
-            # Create the new directory if it doesn't exist
-            os.makedirs(new_dir, exist_ok=True)
-
-            # Move the file
-            shutil.move(old_path, new_path)
-
-            # Update the file path in the model instance
-            instance.file.name = new_path
-            instance.original_filename = base_name
-            instance.save()
-    return instance
-
-
 @receiver(post_save, sender=VoiceRecording)
 def post_save_signal_handler(sender, instance, created, **kwargs):
     if created:
-        move_file_to_upload_path(instance)
+        # Save the original filename
+        instance.original_filename = os.path.basename(instance.file.name)
+        instance.save()
+        # Move the file to it's user upload path
+        move_uploads_to_user_upload_path(instance)
+        # Extract audio metadata
         extract_audio_metadata(instance)
+        # Transcribe the recording asynchronously
         instance.async_transcribe()
