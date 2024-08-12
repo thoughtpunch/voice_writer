@@ -8,11 +8,11 @@ from django.conf import settings
 from voice_writer.lib.transcription import VoiceTranscriber
 from voice_writer.lib.summarize import TranscriptionSummarizer
 from voice_writer.utils.file import (
-    move_uploads_to_user_upload_path,
+    async_move_uploads_to_user_upload_path,
     user_upload_path,
 )
 from voice_writer.utils.audio import extract_audio_metadata
-from voice_writer.tasks.voice import transcribe_voice_recording
+from voice_writer.tasks.voice import async_transcribe_voice_recording
 
 
 class VoiceRecordingStorage(FileSystemStorage):
@@ -56,7 +56,7 @@ class VoiceRecording(models.Model):
         # transcribe the audio recording use OpenAI whisper
         transcription = VoiceTranscriber(
             audio_file_path=self.file.path,
-            user_upload_path=user_upload_path(self)
+            user_upload_path=user_upload_path(self, full_path=True)
         ).transcribe()
 
         # Create and save a VoiceTranscription model
@@ -71,7 +71,10 @@ class VoiceRecording(models.Model):
         voice_transcription.summarize()
 
     def async_transcribe(self):
-        transcribe_voice_recording.delay(self.id)
+        async_transcribe_voice_recording.apply_async(
+            args=[self.id],
+            countdown=5
+        )
 
 
 class VoiceTranscription(models.Model):
@@ -142,12 +145,12 @@ class VoiceTranscription(models.Model):
 @receiver(post_save, sender=VoiceRecording)
 def post_save_signal_handler(sender, instance, created, **kwargs):
     if created:
-        # Save the original filename
-        instance.original_filename = os.path.basename(instance.file.name)
-        instance.save()
-        # Move the file to it's user upload path
-        move_uploads_to_user_upload_path(instance)
         # Extract audio metadata
         extract_audio_metadata(instance)
+        # Move the file to it's user upload path
+        async_move_uploads_to_user_upload_path(
+            instance.__class__.__name__,
+            instance.id
+        )
         # Transcribe the recording asynchronously
         instance.async_transcribe()

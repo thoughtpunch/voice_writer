@@ -24,13 +24,11 @@ class VoiceTranscriptionInline(admin.TabularInline):
 
 # VOICE RECORDING ADMIN
 class VoiceRecordingAdmin(admin.ModelAdmin):
-    exclude = ('file_size', 'duration', 'bitrate', 'original_filename')
     list_display = (
         'title',
         'description',
-        'audio_player',
+        'original_filename',
         'user',
-        'file_url_display',
         'duration_display',
         'file_size_display',
         'format',
@@ -43,6 +41,7 @@ class VoiceRecordingAdmin(admin.ModelAdmin):
         'duration_display',
         'file_size_display',
         'file_url_display',
+        'original_filename',
         'bitrate',
         'format',
         'created_at',

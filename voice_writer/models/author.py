@@ -3,9 +3,9 @@ from django.db import models
 from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from voice_writer.utils.file import sanitize_filename
-from voice_writer.utils.file import move_uploads_to_user_upload_path
-
+from voice_writer.utils.file import (
+    async_move_uploads_to_user_upload_path
+)
 
 class Author(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -45,4 +45,7 @@ class Author(models.Model):
 @receiver(post_save, sender=Author)
 def post_save_signal_handler(sender, instance, created, **kwargs):
     if created:
-        move_uploads_to_user_upload_path(instance)
+        async_move_uploads_to_user_upload_path(
+            instance.__class__.__name__,
+            instance.id
+        )

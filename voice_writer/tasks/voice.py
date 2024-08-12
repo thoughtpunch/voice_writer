@@ -3,7 +3,7 @@ from django.apps import apps
 
 
 @shared_task
-def transcribe_voice_recording(instance_id):
+def async_transcribe_voice_recording(instance_id):
     try:
         klass = apps.get_model('voice_writer', 'VoiceRecording')
         instance = klass.objects.get(id=instance_id)
@@ -11,3 +11,4 @@ def transcribe_voice_recording(instance_id):
     except klass.DoesNotExist:
         # Handle the case where the instance doesn't exist
         pass
+

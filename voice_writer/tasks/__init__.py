@@ -1,5 +1,5 @@
-from .voice import transcribe_voice_recording
+from .voice import async_transcribe_voice_recording
 
 __all__ = [
-    "transcribe_voice_recording"
+    "async_transcribe_voice_recording"
 ]
