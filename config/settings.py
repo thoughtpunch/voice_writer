@@ -54,7 +54,7 @@ INSTALLED_APPS = [
     'django_celery_results',
     'django_celery_beat',
     'corsheaders',
-    'rest_framework',
+    'graphene_django',
     'voice_writer'
 ]
 

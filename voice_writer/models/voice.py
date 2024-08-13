@@ -36,6 +36,7 @@ class VoiceRecording(models.Model):
         storage=VoiceRecordingStorage(),
         blank=True
     )
+    is_processed = models.BooleanField(default=False)
     original_filename = models.CharField(max_length=255, blank=True, null=True)
     keywords = models.JSONField(blank=True, null=True)
     metadata = models.JSONField(blank=True, null=True)
@@ -145,12 +146,15 @@ class VoiceTranscription(models.Model):
 @receiver(post_save, sender=VoiceRecording)
 def post_save_signal_handler(sender, instance, created, **kwargs):
     if created:
-        # Extract audio metadata
+        # 1. Extract audio metadata
         extract_audio_metadata(instance)
-        # Move the file to it's user upload path
+        # 2. Async move the file to it's user upload path
         async_move_uploads_to_user_upload_path(
             instance.__class__.__name__,
             instance.id
         )
-        # Transcribe the recording asynchronously
+        # 3. Async transcribe the recording
         instance.async_transcribe()
+        # 4. Flag the recording as processed
+        instance.is_processed = True
+        instance.save()

@@ -1,6 +1,5 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from django.conf import settings
 import datetime
 
 from .models import (
@@ -17,8 +16,8 @@ from .models import (
 class VoiceTranscriptionInline(admin.TabularInline):
     model = VoiceTranscription
     extra = 0  # Number of empty forms to display by default
-    exclude = ['file']
-    fields = ['transcription','keywords', 'metadata', 'created_at']
+    exclude = ['file', 'metadata']
+    fields = ['transcription','keywords', 'created_at']
     readonly_fields = ['keywords', 'metadata', 'created_at', 'created_at']
 
 
@@ -32,10 +31,11 @@ class VoiceRecordingAdmin(admin.ModelAdmin):
         'duration_display',
         'file_size_display',
         'format',
+        'is_processed',
         'created_at'
     )
     search_fields = ('title', 'description', 'user__username', 'format')
-    list_filter = ('format', 'created_at', 'user')
+    list_filter = ('format', 'created_at', 'user', 'is_processed')
     readonly_fields = (
         'audio_player',
         'duration_display',
@@ -44,6 +44,7 @@ class VoiceRecordingAdmin(admin.ModelAdmin):
         'original_filename',
         'bitrate',
         'format',
+        'is_processed',
         'created_at',
         'updated_at'
     )
@@ -61,6 +62,8 @@ class VoiceRecordingAdmin(admin.ModelAdmin):
                 obj.relative_local_path
             )
         return "No audio file"
+    audio_player.short_description = 'Audio Player'
+    audio_player.allow_tags = True
 
     def file_url_display(self, obj):
         # I'm not sure why this keeps including the whole base path
@@ -85,9 +88,6 @@ class VoiceRecordingAdmin(admin.ModelAdmin):
             duration = datetime.timedelta(seconds=obj.duration)
             return duration
     duration_display.short_description = 'Duration'
-
-    audio_player.short_description = 'Audio Player'
-    audio_player.allow_tags = True
 
 
 # REGISTER ADMIN MODELS

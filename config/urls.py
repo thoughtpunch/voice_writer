@@ -15,23 +15,41 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
-from rest_framework.routers import DefaultRouter
-from voice_writer.viewsets import viewsets_dict
+from graphene_django.views import GraphQLView
+from graphene_file_upload.django import FileUploadGraphQLView
+from django.views.decorators.csrf import csrf_exempt
+from voice_writer.schema import schema
 
-router = DefaultRouter()
-
-
-# Register each viewset with the router
-for model_name, viewset in viewsets_dict.items():
-    router.register(model_name.lower(), viewset)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
 ]
+# STATIC FILES
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
-# Add DRF API views to the urlpatterns
-urlpatterns += [path('api/', include(router.urls))]
+# GRAPHENE GRAPHQL
+urlpatterns += [
+    path(
+        "graphql/",
+        csrf_exempt(
+            GraphQLView.as_view(
+                graphiql=True,
+                schema=schema
+            )
+        )
+    ),
+]
+
+# GRAPHENE FILE UPLOAD
+urlpatterns += [
+    path(
+        "graphql/",
+        FileUploadGraphQLView.as_view(
+            graphiql=True,
+            schema=schema
+        )
+    ),
+]
