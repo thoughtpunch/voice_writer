@@ -1,6 +1,7 @@
 django==5.0.7
 django-extensions==3.2.3
 djangorestframework==3.15.2
+django-cors-headers
 openai==1.39.0
 openai-whisper @ git+https://github.com/openai/whisper.git@ba3f3cd54b0e5b8ce1ab3de13e32122d0d5f98ab
 psycopg2-binary==2.9.9

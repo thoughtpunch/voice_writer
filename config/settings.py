@@ -53,6 +53,8 @@ INSTALLED_APPS = [
     'django_extensions',
     'django_celery_results',
     'django_celery_beat',
+    'corsheaders',
+    'rest_framework',
     'voice_writer'
 ]
 
@@ -64,7 +66,14 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # 👇 Add this line here
+    'corsheaders.middleware.CorsMiddleware',
+    # Add above line just before this line 👇
+    'django.middleware.common.CommonMiddleware',
 ]
+
+# 👇 Add this line here
+CORS_ORIGIN_ALLOW_ALL = True
 
 ROOT_URLCONF = 'config.urls'
 
