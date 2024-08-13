@@ -16,5 +16,3 @@ for model in models:
 
     serializer_class = type(f"{model.__name__}Serializer", (serializers.ModelSerializer,), {"Meta": Meta})
     serializers_dict[model.__name__] = serializer_class
-
-w
