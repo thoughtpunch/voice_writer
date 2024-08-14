@@ -15,7 +15,6 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
-    "@babel/eslint-parser": "^7.25.1",
     "@graphql-codegen/cli": "5.0.2",
     "@graphql-codegen/client-preset": "4.3.3",
     "@graphql-codegen/introspection": "4.0.3",
@@ -23,30 +22,11 @@
     "@graphql-codegen/typescript-operations": "^4.2.3",
     "@graphql-codegen/typescript-vue-apollo": "^4.1.1",
     "@types/node": "^22.3.0",
-    "@types/vue": "^2.0.0",
-    "@typescript-eslint/eslint-plugin": "^8.1.0",
-    "@typescript-eslint/parser": "^8.1.0",
     "@vitejs/plugin-vue": "^5.1.2",
-    "@vue/cli-plugin-babel": "^3.12.1",
-    "@vue/cli-plugin-eslint": "^3.12.1",
+    "@vue/cli-plugin-babel": "^5.0.8",
+    "@vue/cli-plugin-eslint": "^5.0.8",
     "@vue/cli-service": "^5.0.8",
-    "eslint": "^9.9.0",
-    "eslint-plugin-vue": "^9.27.0",
     "typescript": "^5.5.4"
-  },
-  "eslintConfig": {
-    "env": {
-      "node": true
-    },
-    "extends": [
-      "plugin:vue/vue3-essential",
-      "eslint:recommended"
-    ],
-    "parserOptions": {
-      "parser": "@babel/eslint-parser"
-    },
-    "root": true,
-    "rules": {}
   },
   "main": "src/main.ts",
   "name": "voice-writer",
