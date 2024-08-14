@@ -1,8 +1,10 @@
-// src/apollo-client.ts
+
 import { ApolloClient, InMemoryCache, createHttpLink } from '@apollo/client/core';
-import { DefaultApolloClient } from '@vue/apollo-composable';
 import { provideApolloClient } from '@vue/apollo-composable';
 import { createApp } from 'vue';
+
+console.log('IMACOMPUTER'); // This logs when the setup function is called
+
 
 const httpLink = createHttpLink({
   uri: 'http://localhost:8000/graphql/', // Your Django GraphQL endpoint
@@ -16,6 +18,7 @@ const apolloClient = new ApolloClient({
 });
 
 export function setupApollo(app: ReturnType<typeof createApp>) {
-    provideApolloClient(apolloClient);
-    app.provide(DefaultApolloClient, apolloClient);
-  }
+  console.log('Setting up Apollo Client with Vue...'); // This logs when the setup function is called
+  provideApolloClient(apolloClient);
+  app.provide('apollo', apolloClient);
+}
