@@ -100,9 +100,16 @@ class DeleteVoiceRecording(graphene.Mutation):
 
 class VoiceRecordingQuery(graphene.ObjectType):
     all_voice_recordings = graphene.List(VoiceRecordingType)
+    voice_recording = graphene.Field(
+        VoiceRecordingType,
+        id=graphene.ID(required=True)
+    )
 
     def resolve_all_voice_recordings(root, info):
         return VoiceRecording.objects.all()
+
+    def resolve_voice_recording(self, info, id):
+        return VoiceRecording.objects.get(pk=id)
 
 
 class VoiceRecordingMutation(graphene.ObjectType):

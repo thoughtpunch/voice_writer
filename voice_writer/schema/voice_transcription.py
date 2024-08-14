@@ -76,9 +76,16 @@ class DeleteVoiceTranscription(graphene.Mutation):
 
 class VoiceTranscriptionQuery(graphene.ObjectType):
     all_voice_transcriptions = graphene.List(VoiceTranscriptionType)
+    voice_transcription = graphene.Field(
+        VoiceTranscriptionType,
+        id=graphene.ID(required=True)
+    )
 
     def resolve_all_voice_transcriptions(root, info):
         return VoiceTranscription.objects.all()
+
+    def resolve_voice_transcription(self, info, id):
+        return VoiceTranscription.objects.get(pk=id)
 
 
 class VoiceTranscriptionMutation(graphene.ObjectType):

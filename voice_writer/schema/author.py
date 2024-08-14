@@ -98,9 +98,16 @@ class DeleteAuthor(graphene.Mutation):
 # Combine Queries and Mutations
 class AuthorQuery(graphene.ObjectType):
     all_authors = graphene.List(AuthorType)
+    author = graphene.Field(
+        AuthorType,
+        id=graphene.ID(required=True)
+    )
 
     def resolve_all_authors(root, info):
         return Author.objects.all()
+
+    def resolve_author(self, info, id):
+        return Author.objects.get(pk=id)
 
 
 class AuthorMutation(graphene.ObjectType):

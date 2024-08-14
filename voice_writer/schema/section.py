@@ -64,9 +64,16 @@ class DeleteSection(graphene.Mutation):
 
 class SectionQuery(graphene.ObjectType):
     all_sections = graphene.List(SectionType)
+    section = graphene.Field(
+        SectionType,
+        id=graphene.ID(required=True)
+    )
 
     def resolve_all_sections(root, info):
         return Section.objects.all()
+
+    def resolve_section(root, info, id):
+        return Section.objects.get(pk=id)
 
 
 class SectionMutation(graphene.ObjectType):

@@ -76,9 +76,16 @@ class DeleteDocument(graphene.Mutation):
 
 class DocumentQuery(graphene.ObjectType):
     all_documents = graphene.List(DocumentType)
+    document = graphene.Field(
+        DocumentType,
+        id=graphene.ID(required=True)
+    )
 
     def resolve_all_documents(root, info):
         return Document.objects.all()
+
+    def resolve_document(self, info, id):
+        return Document.objects.get(pk=id)
 
 
 class DocumentMutation(graphene.ObjectType):

@@ -87,9 +87,16 @@ class DeleteUser(graphene.Mutation):
 
 class UserQuery(graphene.ObjectType):
     all_users = graphene.List(UserType)
+    user = graphene.Field(
+        UserType,
+        id=graphene.ID(required=True),
+    )
 
     def resolve_all_users(root, info):
         return User.objects.all()
+
+    def resolve_user(self, info, id):
+        return User.objects.get(pk=id)
 
 
 class UserMutation(graphene.ObjectType):

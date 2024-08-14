@@ -16,18 +16,18 @@ class CreateManuscript(graphene.Mutation):
         type = graphene.String(required=True)
         genre = graphene.String()
         summary = graphene.String()
-        author_id = graphene.ID(required=True)
+        manuscript_id = graphene.ID(required=True)
         user_id = graphene.ID(required=True)
 
     manuscript = graphene.Field(ManuscriptType)
 
-    def mutate(self, info, title, type, author_id, user_id, genre=None, summary=None):
+    def mutate(self, info, title, type, manuscript_id, user_id, genre=None, summary=None):
         manuscript = Manuscript(
             title=title,
             type=type,
             genre=genre,
             summary=summary,
-            author_id=author_id,
+            manuscript_id=manuscript_id,
             user_id=user_id,
         )
         manuscript.save()
@@ -72,9 +72,16 @@ class DeleteManuscript(graphene.Mutation):
 
 class ManuscriptQuery(graphene.ObjectType):
     all_manuscripts = graphene.List(ManuscriptType)
+    manuscript = graphene.Field(
+        ManuscriptType,
+        id=graphene.ID(required=True)
+    )
 
     def resolve_all_manuscripts(root, info):
         return Manuscript.objects.all()
+
+    def resolve_manuscript(self, info, id):
+        return manuscript.objects.get(pk=id)
 
 
 class ManuscriptMutation(graphene.ObjectType):
