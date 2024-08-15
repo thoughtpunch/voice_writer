@@ -1,8 +1,0 @@
-query getAuthor($id: ID!) {
-  author(id: $id) {
-    id
-    firstName
-    lastName
-    penName
-  }
-}
