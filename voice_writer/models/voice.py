@@ -36,14 +36,10 @@ class VoiceRecording(models.Model):
         else:
             return "Voice Recording"
 
-    @property
-    def relative_local_path(self):
-        return self.file.path.replace(str(settings.BASE_DIR), '')
-
     def transcribe(self):
         # transcribe the audio recording use OpenAI whisper
         transcription = VoiceTranscriber(
-            audio_file_path=self.file.path
+            audio_file_path=self.file.url
         ).transcribe()
 
         # Create and save a VoiceTranscription model
@@ -90,10 +86,6 @@ class VoiceTranscription(models.Model):
     @property
     def user(self):
         return self.recording.user
-
-    @property
-    def relative_local_path(self):
-        return self.file.path.replace(str(settings.BASE_DIR), '')
 
     def summarize(self):
         if self.transcription and self.user:

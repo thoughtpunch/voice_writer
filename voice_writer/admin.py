@@ -59,7 +59,7 @@ class VoiceRecordingAdmin(admin.ModelAdmin):
                 '<source src="{}" type="audio/mpeg">'
                 'Your browser does not support the audio element.'
                 '</audio>',
-                obj.relative_local_path
+                obj.file.url
             )
         return "No audio file"
     audio_player.short_description = 'Audio Player'
@@ -68,8 +68,8 @@ class VoiceRecordingAdmin(admin.ModelAdmin):
     def file_url_display(self, obj):
         # I'm not sure why this keeps including the whole base path
         # so I'm just going to hack it out for now
-        return obj.relative_local_path
-    file_url_display.description = 'Download'
+        return obj.file.url
+    file_url_display.description = 'Full URL'
 
     def file_size_display(self, obj):
         # Display file size in a more readable format
