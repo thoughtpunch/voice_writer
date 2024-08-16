@@ -1,7 +1,8 @@
 import os
 import re
+import tempfile
+from django.core.files import File
 from django.db import models
-from django.core.files.storage import FileSystemStorage
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.conf import settings
@@ -37,26 +38,31 @@ class VoiceRecording(models.Model):
             return "Voice Recording"
 
     def transcribe(self):
-        # transcribe the audio recording use OpenAI whisper
+        # 1. transcribe the audio recording use OpenAI whisper
         transcription = VoiceTranscriber(
             audio_file_path=self.file.url
         ).transcribe()
 
-        # Create and save a VoiceTranscription model
-        voice_transcription = VoiceTranscription(
-            recording=self,
-            file=transcription.transcription_file_path,
-            transcription=transcription.transcription['text'],
-            metadata=transcription.transcription
-        )
-        voice_transcription.save()
-        # Summarize the transcription and update records
-        voice_transcription.summarize()
+        # 2. Create and save a VoiceTranscription model
+        if transcription and transcription.transcription:
+            srt_content = transcription.srt_subtitles
+            voice_transcription = VoiceTranscription(
+                recording=self,
+                transcription=transcription.transcription['text'],
+                srt_subtitles=srt_content,
+                metadata=transcription.transcription
+            )
+            voice_transcription.save()
+
+            # 3. Summarize the transcription and update records
+            voice_transcription.summarize()
+        else:
+            raise Exception("Transcription failed")
 
     def async_transcribe(self):
         async_transcribe_voice_recording.apply_async(
             args=[self.id],
-            countdown=5
+            countdown=10
         )
 
 
@@ -68,10 +74,7 @@ class VoiceTranscription(models.Model):
     )
     provider = models.CharField(max_length=255, default='whisper')
     transcription = models.TextField(blank=True, null=True)
-    file = models.FileField(
-        upload_to=f"{settings.USER_UPLOADS_PATH}/transcripts",
-        blank=True
-    )
+    srt_subtitles = models.TextField(blank=True, null=True)
     keywords = models.JSONField(blank=True, null=True)
     metadata = models.JSONField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
