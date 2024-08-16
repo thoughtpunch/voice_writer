@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 import os
+import dj_database_url
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -54,6 +55,7 @@ INSTALLED_APPS = [
     'django_celery_results',
     'django_celery_beat',
     'corsheaders',
+    'storages',
     'graphene_django',
     'voice_writer'
 ]
@@ -99,11 +101,14 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+DATABASE_URL = os.getenv('DATABASE_URL')
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=DATABASE_URL,
+        conn_max_age=600,  # Keeps connections open for up to 10 minutes
+        ssl_require=True   # Requires SSL (common in production environments)
+    )
 }
 
 AUTH_USER_MODEL = 'voice_writer.User'
@@ -159,3 +164,21 @@ CELERY_TIMEZONE = 'UTC'
 
 # Celery Beat settings (for periodic tasks)
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+# Storage backend settings
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
+# Configure Cloudflare R2 credentials and bucket
+AWS_ACCESS_KEY_ID = os.getenv('R2_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = os.getenv('R2_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = os.getenv('R2_BUCKET_NAME', 'voice-writer-dev')
+AWS_S3_ENDPOINT_URL = os.getenv('R2_ENDPOINT_URL', 'https://1144e4c26754e19eb87bbd87012d2227.r2.cloudflarestorage.com')
+# Optional: Control file naming
+AWS_LOCATION = 'media'
+
+# Optional: Public/Private media settings
+AWS_QUERYSTRING_AUTH = True  # Generate signed URLs for private media
+AWS_S3_SIGNATURE_VERSION = 's3v4'
+AWS_S3_REGION_NAME = None  # Leave as None for Cloudflare R2
+AWS_DEFAULT_ACL = None  # Required to avoid issues with public/private access
+AWS_S3_FILE_OVERWRITE = False  # Optional: Avoid overwriting files with the same name
