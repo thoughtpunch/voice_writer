@@ -7,20 +7,8 @@ from django.dispatch import receiver
 from django.conf import settings
 from voice_writer.lib.transcription import VoiceTranscriber
 from voice_writer.lib.summarize import TranscriptionSummarizer
-from voice_writer.utils.file import (
-    async_move_uploads_to_user_upload_path,
-    user_upload_path,
-)
 from voice_writer.utils.audio import extract_audio_metadata
 from voice_writer.tasks.voice import async_transcribe_voice_recording
-
-
-class VoiceRecordingStorage(FileSystemStorage):
-    # Override the get_available_name method to prevent Django from
-    #  appending a suffix to the file name. We don't need this
-    #  as we are storing the files in a directory structure
-    def get_available_name(self, name, max_length=None):
-        return name
 
 
 class VoiceRecording(models.Model):
@@ -32,8 +20,7 @@ class VoiceRecording(models.Model):
     file_size = models.PositiveIntegerField(blank=True, null=True)
     format = models.CharField(max_length=50, blank=True, null=True)
     file = models.FileField(
-        upload_to=f"{settings.USER_UPLOADS_PATH}/unprocessed/voice",
-        storage=VoiceRecordingStorage(),
+        upload_to=f"{settings.USER_UPLOADS_PATH}/voice",
         blank=True
     )
     is_processed = models.BooleanField(default=False)
@@ -56,8 +43,7 @@ class VoiceRecording(models.Model):
     def transcribe(self):
         # transcribe the audio recording use OpenAI whisper
         transcription = VoiceTranscriber(
-            audio_file_path=self.file.path,
-            user_upload_path=user_upload_path(self, full_path=True)
+            audio_file_path=self.file.path
         ).transcribe()
 
         # Create and save a VoiceTranscription model
@@ -87,7 +73,7 @@ class VoiceTranscription(models.Model):
     provider = models.CharField(max_length=255, default='whisper')
     transcription = models.TextField(blank=True, null=True)
     file = models.FileField(
-        upload_to=f"{settings.USER_UPLOADS_PATH}/unprocessed/transcripts",
+        upload_to=f"{settings.USER_UPLOADS_PATH}/transcripts",
         blank=True
     )
     keywords = models.JSONField(blank=True, null=True)
@@ -97,7 +83,7 @@ class VoiceTranscription(models.Model):
 
     def __str__(self):
         if self.recording.title:
-            return f"{self.recording.title} - Transcription for Recording#{self.recording.id}"
+            return f"{self.recording.title}"
         else:
             return "Transcription"
 
@@ -148,13 +134,8 @@ def post_save_signal_handler(sender, instance, created, **kwargs):
     if created:
         # 1. Extract audio metadata
         extract_audio_metadata(instance)
-        # 2. Async move the file to it's user upload path
-        async_move_uploads_to_user_upload_path(
-            instance.__class__.__name__,
-            instance.id
-        )
-        # 3. Async transcribe the recording
+        # 2. Async transcribe the recording
         instance.async_transcribe()
-        # 4. Flag the recording as processed
+        # 3. Flag the recording as processed
         instance.is_processed = True
         instance.save()

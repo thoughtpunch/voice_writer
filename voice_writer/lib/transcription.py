@@ -1,13 +1,13 @@
+import os
 import whisper
 from whisper.utils import get_writer
 from typing import Optional
 
 
 class VoiceTranscriber:
-    def __init__(self, audio_file_path: str, user_upload_path: str):
+    def __init__(self, audio_file_path: str):
         self.audio_file_path = audio_file_path
         self.transcription_file_path = None
-        self.user_upload_path = user_upload_path
         self.transcription = None
 
     def transcribe(self, save_to_file: Optional[bool] = True):
@@ -32,7 +32,7 @@ class VoiceTranscriber:
             # Save the transcription to a file
             vtt_writer = get_writer(
                 output_format='srt',
-                output_dir=self.user_upload_path
+                output_dir=os.path.dirname(self.audio_file_path)
             )
             vtt_writer(
                 result=self.transcription,  # type: ignore

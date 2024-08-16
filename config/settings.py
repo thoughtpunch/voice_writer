@@ -13,6 +13,7 @@ import os
 import dj_database_url
 from pathlib import Path
 from dotenv import load_dotenv
+from lib.string import strtobool
 
 load_dotenv()
 
@@ -24,11 +25,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-vk$80u0^o14d17&3t@@-!%c^^+&^h48vkzb!#!okzfq4^f1+bk'
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
+DEBUG = bool(strtobool(os.getenv('DEBUG', 'False')))
 ALLOWED_HOSTS = []
 
 # FILE UPLOADS
@@ -177,6 +177,7 @@ AWS_LOCATION = 'media'
 
 # Optional: Public/Private media settings
 AWS_QUERYSTRING_AUTH = True  # Generate signed URLs for private media
+AWS_S3_VERIFY = False  # Disable SSL verification for local development
 AWS_S3_SIGNATURE_VERSION = 's3v4'
 AWS_S3_REGION_NAME = None  # Leave as None for Cloudflare R2
 AWS_DEFAULT_ACL = None  # Required to avoid issues with public/private access
