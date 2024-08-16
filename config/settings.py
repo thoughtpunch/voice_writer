@@ -11,11 +11,15 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 import os
 import dj_database_url
+import multiprocessing
 from pathlib import Path
 from dotenv import load_dotenv
 from lib.string import strtobool
 
 load_dotenv()
+
+# Set the start method to 'spawn'
+multiprocessing.set_start_method('spawn', force=True)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent

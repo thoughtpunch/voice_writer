@@ -1,7 +1,19 @@
 # myproject/celery.py
 from __future__ import absolute_import, unicode_literals
 import os
+import multiprocessing
+from billiard import context
 from celery import Celery
+
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_RESULT_SERIALIZER = 'json'
+
+# Set the start method to 'spawn'
+multiprocessing.set_start_method('spawn', force=True)
+
+# Set the start method to 'spawn' for the billiard context
+context._force_start_method("spawn")
 
 # Set the default Django settings module for the 'celery' program.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
@@ -19,6 +31,7 @@ app.autodiscover_tasks()
 
 # Set up Redis as the broker using the REDIS_URL environment variable.
 app.conf.broker_url = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+
 
 @app.task(bind=True)
 def debug_task(self):

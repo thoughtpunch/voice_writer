@@ -1,13 +1,11 @@
 import os
 import re
-import tempfile
-from django.core.files import File
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.conf import settings
 from voice_writer.lib.transcription import VoiceTranscriber
-from voice_writer.lib.summarize import TranscriptionSummarizer
+from voice_writer.lib.openai.summarize_transcript import TranscriptionSummarizer
 from voice_writer.utils.audio import extract_audio_metadata
 from voice_writer.tasks.voice import async_transcribe_voice_recording
 
@@ -56,14 +54,15 @@ class VoiceRecording(models.Model):
 
             # 3. Summarize the transcription and update records
             voice_transcription.summarize()
+
+            # 4. Update the VoiceRecording model
+            self.is_processed = True
+            self.save()
         else:
             raise Exception("Transcription failed")
 
     def async_transcribe(self):
-        async_transcribe_voice_recording.apply_async(
-            args=[self.id],
-            countdown=10
-        )
+        async_transcribe_voice_recording.apply_async(args=[self.id])
 
 
 class VoiceTranscription(models.Model):
@@ -131,6 +130,3 @@ def post_save_signal_handler(sender, instance, created, **kwargs):
         extract_audio_metadata(instance)
         # 2. Async transcribe the recording
         instance.async_transcribe()
-        # 3. Flag the recording as processed
-        instance.is_processed = True
-        instance.save()

@@ -1,5 +1,5 @@
 from .transcription import VoiceTranscriber
-from .summarize import TranscriptionSummarizer
+from .openai.summarize_transcript import TranscriptionSummarizer
 
 __all__ = [
     "VoiceTranscriber",

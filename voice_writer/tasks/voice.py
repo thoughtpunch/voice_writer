@@ -11,4 +11,3 @@ def async_transcribe_voice_recording(instance_id):
     except klass.DoesNotExist:
         # Handle the case where the instance doesn't exist
         pass
-
