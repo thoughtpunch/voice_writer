@@ -4,8 +4,8 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.conf import settings
-from voice_writer.lib.transcription import VoiceTranscriber
-from voice_writer.lib.openai.summarize_transcript import TranscriptionSummarizer
+from voice_writer.lib.openai.whisper.transcription import VoiceTranscriber
+from voice_writer.lib.openai.chatgpt.summarize_transcript import TranscriptionSummarizer
 from voice_writer.utils.audio import extract_audio_metadata
 from voice_writer.tasks.voice import async_transcribe_voice_recording
 
