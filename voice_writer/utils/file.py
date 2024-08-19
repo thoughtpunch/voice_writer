@@ -79,10 +79,6 @@ def move_uploads_to_user_upload_path(instance):
                 # Update the file path in the model instance
                 setattr(instance, file_field, new_path)
 
-                # Save the original filename if needed
-                if hasattr(instance, 'original_filename'):
-                    instance.original_filename = base_name
-
                 instance.save()
             else:
                 return file.path

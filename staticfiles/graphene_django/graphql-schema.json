@@ -532,7 +532,7 @@
                             "deprecationReason": null
                         },
                         {
-                            "name": "duration",
+                            "name": "duration_ms",
                             "description": null,
                             "args": [],
                             "type": {
@@ -2546,7 +2546,7 @@
                                     "defaultValue": null
                                 },
                                 {
-                                    "name": "duration",
+                                    "name": "duration_ms",
                                     "description": null,
                                     "type": {
                                         "kind": "SCALAR",
@@ -2681,7 +2681,7 @@
                                     "defaultValue": null
                                 },
                                 {
-                                    "name": "duration",
+                                    "name": "duration_ms",
                                     "description": null,
                                     "type": {
                                         "kind": "SCALAR",

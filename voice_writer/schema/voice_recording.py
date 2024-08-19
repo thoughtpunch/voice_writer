@@ -15,27 +15,25 @@ class CreateVoiceRecording(graphene.Mutation):
         user_id = graphene.ID(required=True)
         title = graphene.String(required=True)
         description = graphene.String()
-        duration = graphene.Float()
+        duration_ms = graphene.Float()
         bitrate = graphene.Int()
         file_size = graphene.Int()
         format = graphene.String()
         file = Upload(required=True)
-        original_filename = graphene.String()
         keywords = graphene.JSONString()
         metadata = graphene.JSONString()
 
     voice_recording = graphene.Field(VoiceRecordingType)
 
-    def mutate(self, info, user_id, title, description=None, duration=None, bitrate=None, file_size=None, format=None, file=None, original_filename=None, keywords=None, metadata=None):
+    def mutate(self, info, user_id, title, description=None, duration_ms=None, bitrate=None, file_size=None, format=None, file=None, keywords=None, metadata=None):
         voice_recording = VoiceRecording(
             title=title,
             description=description,
-            duration=duration,
+            duration_ms=duration_ms,
             bitrate=bitrate,
             file_size=file_size,
             format=format,
             file=file,
-            original_filename=original_filename,
             keywords=keywords,
             metadata=metadata,
             user_id=user_id,
@@ -49,25 +47,24 @@ class UpdateVoiceRecording(graphene.Mutation):
         id = graphene.ID(required=True)
         title = graphene.String()
         description = graphene.String()
-        duration = graphene.Float()
+        duration_ms = graphene.Float()
         bitrate = graphene.Int()
         file_size = graphene.Int()
         format = graphene.String()
         file = graphene.String()
-        original_filename = graphene.String()
         keywords = graphene.JSONString()
         metadata = graphene.JSONString()
 
     voice_recording = graphene.Field(VoiceRecordingType)
 
-    def mutate(self, info, id, title=None, description=None, duration=None, bitrate=None, file_size=None, format=None, file=None, original_filename=None, keywords=None, metadata=None):
+    def mutate(self, info, id, title=None, description=None, duration_ms=None, bitrate=None, file_size=None, format=None, file=None, keywords=None, metadata=None):
         voice_recording = VoiceRecording.objects.get(pk=id)
         if title:
             voice_recording.title = title
         if description:
             voice_recording.description = description
-        if duration is not None:
-            voice_recording.duration = duration
+        if duration_ms is not None:
+            voice_recording.duration_ms = duration_ms
         if bitrate is not None:
             voice_recording.bitrate = bitrate
         if file_size is not None:
@@ -76,8 +73,6 @@ class UpdateVoiceRecording(graphene.Mutation):
             voice_recording.format = format
         if file:
             voice_recording.file = file
-        if original_filename:
-            voice_recording.original_filename = original_filename
         if keywords is not None:
             voice_recording.keywords = keywords
         if metadata is not None:

@@ -1,6 +1,8 @@
 from django.db import models
 from django.conf import settings
+from common.models import BaseModel
 from .author import Author
+from .voice import VoiceRecording
 
 
 class ManuscriptType(models.TextChoices):
@@ -20,6 +22,7 @@ class ManuscriptType(models.TextChoices):
     MANUAL = "manual", "Manual"
     GUIDE = "guide", "Guide"
     OTHER = "other", "Other"
+
 
 class SectionType(models.TextChoices):
     # Common Book Parts
@@ -90,7 +93,18 @@ class Genres(models.TextChoices):
     OTHER = "other", "Other"
 
 
-class Manuscript(models.Model):
+class Manuscript(BaseModel):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE
+    )
+    # Voice Recording this manuscript is based on
+    recording = models.ForeignKey(
+        VoiceRecording,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
+    )
     type = models.CharField(
         max_length=50,
         choices=ManuscriptType.choices,
@@ -100,10 +114,6 @@ class Manuscript(models.Model):
         max_length=50,
         choices=Genres.choices,
         default=Genres.FICTION,
-    )
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE
     )
     author = models.ForeignKey(Author, on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
@@ -115,7 +125,7 @@ class Manuscript(models.Model):
         return self.title
 
 
-class Section(models.Model):
+class Section(BaseModel):
     type = models.CharField(
         max_length=50,
         choices=SectionType.choices,
@@ -138,7 +148,7 @@ class Section(models.Model):
         return f'{self.title} (Section {self.order})'
 
 
-class Document(models.Model):
+class Document(BaseModel):
     manuscript = models.ForeignKey(Manuscript, on_delete=models.CASCADE)
     section = models.ForeignKey(
         Section,

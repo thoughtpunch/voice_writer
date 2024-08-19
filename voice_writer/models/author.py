@@ -1,9 +1,9 @@
-import os
 from django.db import models
 from django.conf import settings
+from common.models import BaseModel
 
 
-class Author(models.Model):
+class Author(BaseModel):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     # Basic Information
     first_name = models.CharField(max_length=50)

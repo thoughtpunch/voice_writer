@@ -26,7 +26,6 @@ class VoiceRecordingAdmin(admin.ModelAdmin):
     list_display = (
         'title',
         'description',
-        'original_filename',
         'user',
         'duration_display',
         'file_size_display',
@@ -41,7 +40,6 @@ class VoiceRecordingAdmin(admin.ModelAdmin):
         'duration_display',
         'file_size_display',
         'file_url_display',
-        'original_filename',
         'bitrate',
         'format',
         'is_processed',
@@ -83,9 +81,9 @@ class VoiceRecordingAdmin(admin.ModelAdmin):
     file_size_display.short_description = 'File Size'
 
     def duration_display(self, obj):
-        if obj.duration:
+        if obj.duration_ms:
             # Display duration in a more readable format
-            duration = datetime.timedelta(seconds=obj.duration)
+            duration = datetime.timedelta(seconds=(obj.duration_ms / 1000))
             return duration
     duration_display.short_description = 'Duration'
 
