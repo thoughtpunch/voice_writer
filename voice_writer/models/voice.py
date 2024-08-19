@@ -51,6 +51,7 @@ class VoiceRecording(models.Model):
                 metadata=transcription.transcription
             )
             voice_transcription.save()
+            # Change something
 
             # 3. Summarize the transcription and update records
             voice_transcription.summarize()
