@@ -25,6 +25,10 @@ class VoiceRecording(BaseModel):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     title = models.CharField(max_length=255, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
+    cover = models.FileField(
+        upload_to=f"{settings.USER_UPLOADS_PATH}/voice_cover_art",
+        blank=True
+    )
     audio_source = models.CharField(
         max_length=10,
         choices=AudioSource.choices,
@@ -48,7 +52,7 @@ class VoiceRecording(BaseModel):
 
     def __str__(self):
         if self.title:
-            return self.title
+            return str(self.title)
         else:
             return "Voice Recording"
 
@@ -120,7 +124,7 @@ class VoiceTranscription(BaseModel):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        if self.recording.title:
+        if self.recording and self.recording.title:
             return f"{self.recording.title}"
         else:
             return "Transcription"

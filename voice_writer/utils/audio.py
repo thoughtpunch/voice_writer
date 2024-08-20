@@ -23,6 +23,23 @@ def is_ogg_or_flac(file) -> bool:
     return instance_bool or file_format_bool
 
 
+def calculate_bitrate(file_size_bytes, duration_seconds):
+    """
+    Calculate the bitrate of an audio file.
+
+    :param file_size_bytes: Size of the audio file in bytes.
+    :param duration_seconds: Duration of the audio file in seconds.
+    :return: Bitrate in kilobits per second (kbps).
+    """
+    if duration_seconds == 0:
+        raise ValueError("Duration cannot be zero.")
+
+    bitrate_bps = (file_size_bytes * 8) / duration_seconds  # Bitrate in bps
+    bitrate_kbps = bitrate_bps / 1000  # Convert to kbps
+
+    return bitrate_kbps
+
+
 # Extract audio metadata using the Mutagen library
 def extract_audio_metadata_from_file(file) -> dict:
     audio = MutagenFile(file)
@@ -35,7 +52,11 @@ def extract_audio_metadata_from_file(file) -> dict:
 
     if audio and audio.info:
         audio_metadata_dict['duration_ms'] = audio.info.length * 1000
-        audio_metadata_dict['bitrate_kbps'] = audio.info.bitrate // 1000  # Convert to kbps
+        if audio.info.bitrate is None or audio.info.bitrate == 0:
+            bitrate_kbps = calculate_bitrate(file.size, audio.info.length)
+        else:
+            bitrate_kbps = audio.info.bitrate // 1000
+        audio_metadata_dict['bitrate_kbps'] = bitrate_kbps
 
         # Extract a human-readable dictionary of audio tags
         if is_m4a(file):
@@ -62,7 +83,10 @@ def extract_audio_metadata_from_file(file) -> dict:
                 metadata_key = re.sub(r'(?<=\w)\W+(?=\w)', '_', metadata_key)
 
                 if isinstance(value, list):
-                    audio_metadata_dict[metadata_key] = list(str(v) for v in value)
+                    if len(value) == 1:
+                        audio_metadata_dict[metadata_key] = str(value[0])
+                    else:
+                        audio_metadata_dict[metadata_key] = list(str(v) for v in value)
                 else:
                     audio_metadata_dict[metadata_key] = str(value)
 
