@@ -123,7 +123,7 @@ class Migration(migrations.Migration):
                 ('audio_source', models.CharField(choices=[('app', 'App'), ('upload', 'Upload'), ('api', 'API')], default='app', max_length=10)),
                 ('duration_ms', models.BigIntegerField(blank=True, null=True)),
                 ('recorded_at', models.DateTimeField(blank=True, null=True)),
-                ('bitrate', models.IntegerField(blank=True, null=True)),
+                ('bitrate_kbps', models.IntegerField(blank=True, null=True)),
                 ('file_size', models.PositiveIntegerField(blank=True, null=True)),
                 ('format', models.CharField(blank=True, max_length=50, null=True)),
                 ('file', models.FileField(blank=True, upload_to='user_uploads/voice')),

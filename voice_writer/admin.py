@@ -40,7 +40,7 @@ class VoiceRecordingAdmin(admin.ModelAdmin):
         'duration_display',
         'file_size_display',
         'file_url_display',
-        'bitrate',
+        'bitrate_kbps',
         'format',
         'is_processed',
         'created_at',

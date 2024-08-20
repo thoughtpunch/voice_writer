@@ -19,7 +19,7 @@ class VoiceTranscriber:
         return self
 
     def _whisper_transcribe_audio(self) -> Optional[str]:
-        model = whisper.load_model("medium")
+        model = whisper.load_model("base")
         result = model.transcribe(
             self.audio_file_path,
             word_timestamps=True,

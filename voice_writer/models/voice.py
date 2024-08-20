@@ -2,14 +2,15 @@ import os
 import re
 from common.models import BaseModel
 from django.db import models
-from django.db.models.signals import post_save
+from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
 from django.conf import settings
+from django.utils import timezone
 from voice_writer.lib.openai.whisper.transcription import VoiceTranscriber
 from voice_writer.lib.openai.chatgpt.summarize_transcript import (
     TranscriptionSummarizer
 )
-from voice_writer.utils.audio import extract_audio_metadata
+from voice_writer.utils.audio import extract_audio_metadata_from_file
 from voice_writer.tasks.voice import async_transcribe_voice_recording
 
 
@@ -28,11 +29,11 @@ class VoiceRecording(BaseModel):
         choices=AudioSource.choices,
         default=AudioSource.APP,
     )
-    duration_ms = models.BigIntegerField(blank=True, null=True)
-    recorded_at = models.DateTimeField(blank=True, null=True)
-    bitrate = models.IntegerField(blank=True, null=True)
-    file_size = models.PositiveIntegerField(blank=True, null=True)
-    format = models.CharField(max_length=50, blank=True, null=True)
+    duration_ms = models.BigIntegerField(default=0)
+    recorded_at = models.DateTimeField(default=timezone.now)
+    bitrate_kbps = models.IntegerField(default=0)
+    file_size = models.PositiveIntegerField(default=0)
+    format = models.CharField(max_length=10)
     file = models.FileField(
         upload_to=f"{settings.USER_UPLOADS_PATH}/voice",
         blank=True
@@ -40,11 +41,7 @@ class VoiceRecording(BaseModel):
     is_processed = models.BooleanField(default=False)
     keywords = models.JSONField(blank=True, null=True)
     metadata = models.JSONField(blank=True, null=True)
-    segment_count = models.PositiveBigIntegerField(
-        blank=True,
-        null=True,
-        default=1
-    )
+    segment_count = models.PositiveBigIntegerField(default=1)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -165,10 +162,20 @@ class VoiceTranscription(BaseModel):
         return summary
 
 
+@receiver(pre_save, sender=VoiceRecording)
+def pre_save_voice_recording(sender, instance, **kwargs):
+    # Extract audio metadata
+    audio_meta_data = extract_audio_metadata_from_file(instance.file)
+    for key, value in audio_meta_data.items():
+        if hasattr(instance, key):
+            setattr(instance, key, value)
+    if not instance.metadata:
+        instance.metadata = {}
+    instance.metadata['audio'] = audio_meta_data
+
+
 @receiver(post_save, sender=VoiceRecording)
-def post_save_signal_handler(sender, instance, created, **kwargs):
+def post_save_voice_recording(sender, instance, created, **kwargs):
     if created:
-        # 1. Extract audio metadata
-        extract_audio_metadata(instance)
-        # 2. Async transcribe the recording
+        # Async transcribe the recording
         instance.async_transcribe()
