@@ -1,3 +1,4 @@
+import re
 from mutagen import File as MutagenFile
 from mutagen.m4a import M4A
 from mutagen.mp3 import MP3
@@ -49,11 +50,21 @@ def extract_audio_metadata_from_file(file) -> dict:
         # Human-readable Tags for supported formats
         if audio is not None and audio.tags is not None:
             for key, value in audio.tags.items():
-                human_readable_key = lookup_dict.get(key, key)
-                if isinstance(value, list):
-                    audio_metadata_dict[human_readable_key] = list(str(v) for v in value)
+                human_readable_key_search = lookup_dict.get(key, key)
+                if human_readable_key_search:
+                    human_readable_key = human_readable_key_search
                 else:
-                    audio_metadata_dict[human_readable_key] = str(value)
+                    human_readable_key = key
+
+                # Convert to snake_case
+                metadata_key = human_readable_key.lower().strip()
+                metadata_key = re.sub(r'(^\W+|\W+$)', '', metadata_key)
+                metadata_key = re.sub(r'(?<=\w)\W+(?=\w)', '_', metadata_key)
+
+                if isinstance(value, list):
+                    audio_metadata_dict[metadata_key] = list(str(v) for v in value)
+                else:
+                    audio_metadata_dict[metadata_key] = str(value)
 
         # General stats
         for key, value in audio.info.__dict__.items():  # noqa

@@ -1,5 +1,6 @@
 import os
 import re
+from typing import Optional
 from common.models import BaseModel
 from django.db import models
 from django.db.models.signals import pre_save, post_save
@@ -70,7 +71,7 @@ class VoiceRecording(BaseModel):
             # Change something
 
             # 3. Summarize the transcription and update records
-            voice_transcription.summarize()
+            voice_transcription.summarize(overwrite_values=True)
 
             # 4. Update the VoiceRecording model
             self.is_processed = True
@@ -128,38 +129,38 @@ class VoiceTranscription(BaseModel):
     def user(self):
         return self.recording.user
 
-    def summarize(self):
+    def summarize(self, overwrite_values: Optional[bool] = True):
         if self.transcription and self.user:
             # Use the filename as the title if it's not set
-            if self.recording.title:
-                summary_title = self.recording.title
-            else:
-                summary_title = os.path.basename(
-                    self.recording.file.name
-                ).split('.')[0]
-            cleaned_summary_title = re.sub(r'\W+', ' ', summary_title).strip()
+            summary_title = (
+                self.recording.title
+                if self.recording.title
+                else os.path.basename(self.recording.file.name).split('.')[0]
+            )
+            cleaned_summary_title = re.sub(r'\W+', ' ', summary_title).strip().lower()
+
             # Summarize the transcription with OpenAI
             summarizer = TranscriptionSummarizer(
                 author=f"{self.user.first_name} {self.user.last_name}",
-                title=cleaned_summary_title.lower(),
+                title=cleaned_summary_title,
                 transcription=self.transcription
             )
             summary = summarizer.summarize()
-            # Set local attributes from AI summarization
-            if not self.keywords:
-                self.keywords = summary.get('keywords')
-            if not self.metadata:
-                self.metadata = summary
+
+            # Set local attributes, considering the overwrite flag
+            self.keywords = summary.get('keywords') if overwrite_values or not self.keywords else self.keywords
+            self.metadata = summary if overwrite_values or not self.metadata else self.metadata
             self.save()
-            # Set related attributes from AI summarization
-            if not self.recording.keywords:
-                self.recording.keywords = summary.get('keywords')
-            if not self.recording.title:
-                self.recording.title = summary.get('title')
-            if not self.recording.description:
-                self.recording.description = summary.get('summary')
+
+            # Set related attributes, considering the overwrite flag
+            self.recording.keywords = summary.get('keywords') if overwrite_values or not self.recording.keywords else self.recording.keywords
+            self.recording.title = summary.get('title') if overwrite_values or not self.recording.title else self.recording.title
+            self.recording.description = summary.get('summary') if overwrite_values or not self.recording.description else self.recording.description
             self.recording.save()
-        return summary
+
+            return summary
+        else:
+            raise Exception("Transcription not available or user not set")
 
 
 @receiver(pre_save, sender=VoiceRecording)
