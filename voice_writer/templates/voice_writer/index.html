@@ -1,15 +1,33 @@
 {% extends 'voice_writer/base.html' %}
 
 {% block content %}
-<h2>Welcome to VoiceWriter</h2>
+<div class="row">
+    <div class="col-md-8">
+        <h2>Your Manuscripts</h2>
+        <ul class="list-group">
+            {% for manuscript in manuscripts %}
+                <li class="list-group-item">
+                    <a href="{% url 'manuscript_view' manuscript.id %}">{{ manuscript.title }}</a>
+                </li>
+            {% empty %}
+                <li class="list-group-item">You have no manuscripts yet.</li>
+            {% endfor %}
+        </ul>
+    </div>
 
-<!-- Button to trigger HTMX request -->
-<button hx-get="{% url 'load_summary' %}" hx-target="#summary-container" hx-swap="innerHTML">
-    Load Summary
-</button>
-
-<!-- Container where the summary will be loaded -->
-<div id="summary-container">
-    <p>Click the button to load a summary.</p>
+    <div class="col-md-4">
+        <h2>Actions</h2>
+        <ul class="list-group">
+            <li class="list-group-item">
+                <a href="{% url 'create_voice_recording' %}">Create New Voice Recording</a>
+            </li>
+            <li class="list-group-item">
+                <a href="{% url 'voice_recording_list' %}">View Your Voice Recordings</a>
+            </li>
+            <li class="list-group-item">
+                <a href="{% url 'author_profile' %}">Go to Your Profile</a>
+            </li>
+        </ul>
+    </div>
 </div>
 {% endblock %}

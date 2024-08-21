@@ -1,0 +1,95 @@
+{% extends 'voice_writer/base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>Author Profile</h2>
+    <form id="author-profile-form" method="POST" enctype="multipart/form-data" hx-post="{% url 'update_author' %}" hx-target="#author-profile" hx-swap="outerHTML">
+        {% csrf_token %}
+        <div id="author-profile">
+            <!-- Basic Information -->
+            <h3>Basic Information</h3>
+            <div class="mb-3">
+                <label for="first_name" class="form-label">First Name</label>
+                <input type="text" class="form-control" id="first_name" name="first_name" value="{{ author.first_name }}">
+            </div>
+            <div class="mb-3">
+                <label for="middle_name" class="form-label">Middle Name</label>
+                <input type="text" class="form-control" id="middle_name" name="middle_name" value="{{ author.middle_name }}">
+            </div>
+            <div class="mb-3">
+                <label for="last_name" class="form-label">Last Name</label>
+                <input type="text" class="form-control" id="last_name" name="last_name" value="{{ author.last_name }}">
+            </div>
+            <div class="mb-3">
+                <label for="pen_name" class="form-label">Pen Name</label>
+                <input type="text" class="form-control" id="pen_name" name="pen_name" value="{{ author.pen_name }}">
+            </div>
+            <div class="mb-3">
+                <label for="pronouns" class="form-label">Pronouns</label>
+                <input type="text" class="form-control" id="pronouns" name="pronouns" value="{{ author.pronouns }}">
+            </div>
+            <div class="mb-3">
+                <label for="date_of_birth" class="form-label">Date of Birth</label>
+                <input type="date" class="form-control" id="date_of_birth" name="date_of_birth" value="{{ author.date_of_birth }}">
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="show_date_of_birth" name="show_date_of_birth" {% if author.show_date_of_birth %}checked{% endif %}>
+                    <label for="show_date_of_birth" class="form-check-label">Show Date of Birth</label>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="nationality" class="form-label">Nationality</label>
+                <input type="text" class="form-control" id="nationality" name="nationality" value="{{ author.nationality }}">
+            </div>
+            <div class="mb-3">
+                <label for="location" class="form-label">Location</label>
+                <input type="text" class="form-control" id="location" name="location" value="{{ author.location }}">
+            </div>
+
+            <!-- Biographical Information -->
+            <h3>Biographical Information</h3>
+            <div class="mb-3">
+                <label for="biography" class="form-label">Biography</label>
+                <textarea class="form-control" id="biography" name="biography" rows="4">{{ author.biography }}</textarea>
+            </div>
+            <div class="mb-3">
+                <label for="place_of_birth" class="form-label">Place of Birth</label>
+                <input type="text" class="form-control" id="place_of_birth" name="place_of_birth" value="{{ author.place_of_birth }}">
+            </div>
+            <div class="mb-3">
+                <label for="education" class="form-label">Education</label>
+                <input type="text" class="form-control" id="education" name="education" value="{{ author.education }}">
+            </div>
+            <div class="mb-3">
+                <label for="occupation" class="form-label">Occupation</label>
+                <input type="text" class="form-control" id="occupation" name="occupation" value="{{ author.occupation }}">
+            </div>
+
+            <!-- Literary Career -->
+            <h3>Literary Career</h3>
+            <div class="mb-3">
+                <label for="notable_works" class="form-label">Notable Works</label>
+                <textarea class="form-control" id="notable_works" name="notable_works" rows="3">{{ author.notable_works }}</textarea>
+            </div>
+            <div class="mb-3">
+                <label for="genres" class="form-label">Genres</label>
+                <textarea class="form-control" id="genres" name="genres" rows="3">{{ author.genres }}</textarea>
+            </div>
+            <div class="mb-3">
+                <label for="influences" class="form-label">Influences</label>
+                <textarea class="form-control" id="influences" name="influences" rows="3">{{ author.influences }}</textarea>
+            </div>
+
+            <!-- Portrait/Avatar -->
+            <h3>Portrait/Avatar</h3>
+            <div class="mb-3">
+                {% if author.portrait %}
+                    <img src="{{ author.portrait.url }}" class="img-thumbnail mb-3" alt="Portrait">
+                {% endif %}
+                <input type="file" class="form-control" id="portrait" name="portrait">
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

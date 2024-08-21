@@ -15,7 +15,7 @@ class TranscriptionSummarizer:
         self.transcription = transcription
         self.summary = None
 
-    def _transcription_to_summary(self):
+    def _summary_prompt(self):
         return f"""
             Please summarize the following text transcription from an audio file.
             The context is that this audio transcription is was authored by {self.author}, an author who is dictating a story, book, or manuscript using their voice.
@@ -31,7 +31,7 @@ class TranscriptionSummarizer:
             messages=[
                 {
                     "role": "user",
-                    "content": self._transcription_to_summary(),
+                    "content": self._summary_prompt(),
                 }
             ],
         )

@@ -1,0 +1,19 @@
+{% extends 'voice_writer/base.html' %}
+
+{% load filters %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Edit Voice Recording: {{ recording.title }}</h2>
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+    </form>
+
+    <hr>
+
+    <h3>Transcript</h3>
+    <p>{{ recording.metadata.transcript|default:"No transcript available" }}</p> <!-- Assuming transcript is stored in metadata -->
+</div>
+{% endblock %}

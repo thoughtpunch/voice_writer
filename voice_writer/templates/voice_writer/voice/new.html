@@ -1,0 +1,12 @@
+{% extends 'voice_writer/base.html' %}
+
+{% load filters %}
+
+{% block content %}
+<h2>Create New Voice Recording</h2>
+<form method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Save</button>
+</form>
+{% endblock %}

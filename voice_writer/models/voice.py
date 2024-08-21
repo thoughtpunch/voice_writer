@@ -5,9 +5,11 @@ from common.models import BaseModel
 from django.db import models
 from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
+from django.core.files.base import ContentFile
 from django.conf import settings
 from django.utils import timezone
 from voice_writer.lib.openai.whisper.transcription import VoiceTranscriber
+from voice_writer.lib.openai.dalle.generate_cover_art import CoverArtGenerator
 from voice_writer.lib.openai.chatgpt.summarize_transcript import (
     TranscriptionSummarizer
 )
@@ -85,6 +87,24 @@ class VoiceRecording(BaseModel):
 
     def async_transcribe(self):
         async_transcribe_voice_recording.apply_async(args=[self.id])
+
+    def generate_cover_art(self):
+        # Generate cover art for the recording
+        if self.title and self.description:
+            cover_art = CoverArtGenerator(
+                title=self.title,
+                description=self.description
+            ).generate_cover_art()
+            if cover_art:
+                self.cover.save(
+                    cover_art.generated_cover_name,
+                    ContentFile(
+                        cover_art.generated_cover_image.getvalue()
+                    ),
+                    save=False
+                )
+        else:
+            raise Exception("Title and description required to generate cover art")
 
 
 class VoiceSegment(BaseModel):
