@@ -1,5 +1,8 @@
 from django.db import models
 from django.conf import settings
+from django.utils.text import slugify
+from django.db.models.signals import pre_save
+from django.dispatch import receiver
 from common.models import BaseModel
 from .author import Author
 from .voice import VoiceRecording
@@ -117,6 +120,7 @@ class Manuscript(BaseModel):
     )
     author = models.ForeignKey(Author, on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
+    slug = models.SlugField(max_length=255, unique=True, blank=True)
     summary = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -169,3 +173,10 @@ class Document(BaseModel):
     def __str__(self):
         return f'{self.title} (Document {self.order})'
 
+
+@receiver(pre_save, sender=Manuscript)
+def pre_save_manuscript(sender, instance, **kwargs):
+    # Set slug if not set
+    if instance.id and instance.title and not instance.slug:
+        first_octet = str(instance.id).split('-')[0]
+        instance.slug = f"{slugify(instance.title).replace('-', '_')}_{first_octet}"

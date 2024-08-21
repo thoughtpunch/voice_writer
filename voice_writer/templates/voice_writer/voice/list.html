@@ -20,17 +20,36 @@
         <!-- Audio Player and Details -->
         <div class="col-md-9">
             <div class="d-flex align-items-center">
-                <div id="waveform-{{ recording.id }}" class="waveform"></div>
-                <button class="btn btn-primary ms-3" onclick="togglePlay('{{ recording.id }}')">Play/Pause</button>
+                <div id="waveform-{{ recording.slug }}" class="waveform"></div>
+                <button class="btn btn-primary ms-3" onclick="togglePlay('{{ recording.slug }}')">Play/Pause</button>
             </div>
 
             <div class="mt-3">
                 <h5>{{ recording.title }}</h5>
                 <p>{{ recording.description }}</p>
-                <p>Duration: {{ recording.duration_ms|ms_to_duration }}</p>
-                <p>Bitrate: {{ recording.bitrate_kbps }} kbps</p>
-                <p>Format: {{ recording.format }}</p>
+                <p><strong>Duration:</strong> {{ recording.duration_ms|ms_to_duration }}</p>
+                <p><strong>Bitrate:</strong> {{ recording.bitrate_kbps }} kbps</p>
+                <p><strong>Format:</strong> {{ recording.format }}</p>
                 <a href="{% url 'edit_voice_recording' recording.id %}" class="btn btn-secondary">Edit & View Transcript</a>
+
+                <!-- Drawer toggle button -->
+                <button class="btn btn-link mt-2" type="button" data-bs-toggle="collapse" data-bs-target="#details-{{ recording.slug }}" aria-expanded="false" aria-controls="details-{{ recording.slug }}">
+                    More Details
+                </button>
+
+                <!-- Drawer for additional details -->
+                <div class="collapse mt-2" id="details-{{ recording.slug }}">
+                    <div class="card card-body">
+                        <h5>Audio Details</h5>
+                        <ul>
+                            {% for key, value in recording.metadata.audio.items %}
+                                <p>
+                                    <strong>{{ key }}:</strong> {{ value }}
+                                </p>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -38,32 +57,28 @@
     {% endfor %}
 </div>
 
-<!-- Include Wavesurfer.js -->
-<script src="https://unpkg.com/wavesurfer.js"></script>
-
 <script>
 // Initialize Wavesurfer instances for each recording
 document.addEventListener('DOMContentLoaded', function () {
     {% for recording in recordings %}
-    var wavesurfer{{ recording.id }} = WaveSurfer.create({
-        container: '#waveform-{{ recording.id }}',
+    var wavesurfer{{ recording.slug }} = WaveSurfer.create({
+        container: '#waveform-{{ recording.slug }}',
         waveColor: '#ddd',
         progressColor: '#007bff',
         height: 64,
         responsive: true
     });
 
-    wavesurfer{{ recording.id }}.load('{{ recording.file.url }}');
+    wavesurfer{{ recording.slug }}.load('{{ recording.file.url }}');
 
-    window['wavesurfer{{ recording.id }}'] = wavesurfer{{ recording.id }};
+    window['wavesurfer{{ recording.slug }}'] = wavesurfer{{ recording.slug }};
     {% endfor %}
 });
 
 // Toggle play/pause for a specific recording
-function togglePlay(recordingId) {
-    var wavesurfer = window['wavesurfer' + recordingId];
+function togglePlay(slug) {
+    var wavesurfer = window['wavesurfer' + slug];
     wavesurfer.playPause();
 }
 </script>
 {% endblock %}
-<!-- </div> -->

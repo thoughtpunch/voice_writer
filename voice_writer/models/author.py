@@ -1,9 +1,13 @@
 from django.db import models
 from django.conf import settings
+from django.utils.text import slugify
+from django.db.models.signals import pre_save
+from django.dispatch import receiver
 from common.models import BaseModel
 
 
 class Author(BaseModel):
+    slug = models.SlugField(max_length=255, unique=True, blank=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     # Basic Information
     first_name = models.CharField(max_length=50)
@@ -34,5 +38,22 @@ class Author(BaseModel):
         null=True
     )
 
+    @property
+    def name(self):
+        name_segments = [
+            self.first_name,
+            self.middle_name,
+            self.last_name
+        ]
+        return " ".join(name_segments)
+
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
+
+
+@receiver(pre_save, sender=Author)
+def pre_save_author(sender, instance, **kwargs):
+    # Set slug if not set
+    if instance.id and not instance.slug:
+        first_octet = str(instance.id).split('-')[0]
+        instance.slug = f"{slugify(instance.name).replace('-', '_')}_{first_octet}"

@@ -1,5 +1,7 @@
 import os
 import re
+import requests
+from celery import chain
 from typing import Optional
 from common.models import BaseModel
 from django.db import models
@@ -8,13 +10,17 @@ from django.dispatch import receiver
 from django.core.files.base import ContentFile
 from django.conf import settings
 from django.utils import timezone
+from django.utils.text import slugify
 from voice_writer.lib.openai.whisper.transcription import VoiceTranscriber
 from voice_writer.lib.openai.dalle.generate_cover_art import CoverArtGenerator
 from voice_writer.lib.openai.chatgpt.summarize_transcript import (
     TranscriptionSummarizer
 )
 from voice_writer.utils.audio import extract_audio_metadata_from_file
-from voice_writer.tasks.voice import async_transcribe_voice_recording
+from voice_writer.tasks.voice import (
+    async_transcribe_voice_recording,
+    async_generate_cover_art
+)
 
 
 class AudioSource(models.TextChoices):
@@ -26,6 +32,7 @@ class AudioSource(models.TextChoices):
 class VoiceRecording(BaseModel):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     title = models.CharField(max_length=255, blank=True, null=True)
+    slug = models.SlugField(max_length=255, unique=True, blank=True)
     description = models.TextField(blank=True, null=True)
     cover = models.FileField(
         upload_to=f"{settings.USER_UPLOADS_PATH}/voice_cover_art",
@@ -42,8 +49,7 @@ class VoiceRecording(BaseModel):
     file_size = models.PositiveIntegerField(default=0)
     format = models.CharField(max_length=10)
     file = models.FileField(
-        upload_to=f"{settings.USER_UPLOADS_PATH}/voice",
-        blank=True
+        upload_to=f"{settings.USER_UPLOADS_PATH}/voice"
     )
     is_processed = models.BooleanField(default=False)
     keywords = models.JSONField(blank=True, null=True)
@@ -59,52 +65,56 @@ class VoiceRecording(BaseModel):
             return "Voice Recording"
 
     def transcribe(self):
-        # 1. transcribe the audio recording use OpenAI whisper
-        transcription = VoiceTranscriber(
-            audio_file_path=self.file.url
-        ).transcribe()
+        if not self.is_processed:
+            # 1. transcribe the audio recording use OpenAI whisper
+            transcription = VoiceTranscriber(
+                audio_file_path=self.file.url
+            ).transcribe()
 
-        # 2. Create and save a VoiceTranscription model
-        if transcription and transcription.transcription:
-            srt_content = transcription.srt_subtitles
-            voice_transcription = VoiceTranscription(
-                recording=self,
-                transcription=transcription.transcription['text'],
-                srt_subtitles=srt_content,
-                metadata=transcription.transcription
-            )
-            voice_transcription.save()
-            # Change something
+            # 2. Create and save a VoiceTranscription model
+            if transcription and transcription.transcription:
+                srt_content = transcription.srt_subtitles
+                voice_transcription = VoiceTranscription(
+                    recording=self,
+                    transcription=transcription.transcription['text'],
+                    srt_subtitles=srt_content,
+                    metadata=transcription.transcription
+                )
+                voice_transcription.save()
+                # Change something
 
-            # 3. Summarize the transcription and update records
-            voice_transcription.summarize(overwrite_values=True)
+                # 3. Summarize the transcription and update records
+                voice_transcription.summarize(overwrite_values=True)
 
-            # 4. Update the VoiceRecording model
-            self.is_processed = True
-            self.save()
+                # 4. Update the VoiceRecording model
+                self.is_processed = True
+                self.save()
+            else:
+                raise Exception("Transcription failed")
         else:
-            raise Exception("Transcription failed")
-
-    def async_transcribe(self):
-        async_transcribe_voice_recording.apply_async(args=[self.id])
+            raise Exception("Recording already processed")
 
     def generate_cover_art(self):
-        # Generate cover art for the recording
-        if self.title and self.description:
+        if self.is_processed:
+            # Generate cover art for the recording
+            audio_metadata = self.metadata['audio']
+            audio_metadata['description'] = self.description
+            audio_metadata['keywords'] = self.keywords
             cover_art = CoverArtGenerator(
-                title=self.title,
-                description=self.description
+                audio_metadata=audio_metadata
             ).generate_cover_art()
-            if cover_art:
-                self.cover.save(
-                    cover_art.generated_cover_name,
-                    ContentFile(
-                        cover_art.generated_cover_image.getvalue()
-                    ),
-                    save=False
-                )
+            if cover_art and cover_art.generated_cover_url:
+                # Stream the content from the URL without downloading
+                image_name = f"{self.title}_cover.png"
+                image_url = cover_art.generated_cover_url
+                # Get content from URL
+                with requests.get(image_url, stream=True) as r:
+                    r.raise_for_status()
+                    content = ContentFile(r.content)
+                    # Save the content directly to the FileField
+                    self.cover.save(image_name, content, save=True)
         else:
-            raise Exception("Title and description required to generate cover art")
+            raise Exception("Transcribe the recording before generating cover art")
 
 
 class VoiceSegment(BaseModel):
@@ -189,18 +199,26 @@ class VoiceTranscription(BaseModel):
 
 @receiver(pre_save, sender=VoiceRecording)
 def pre_save_voice_recording(sender, instance, **kwargs):
-    # Extract audio metadata
-    audio_meta_data = extract_audio_metadata_from_file(instance.file)
-    for key, value in audio_meta_data.items():
-        if hasattr(instance, key):
-            setattr(instance, key, value)
-    if not instance.metadata:
-        instance.metadata = {}
-    instance.metadata['audio'] = audio_meta_data
+    # Set slug if not set
+    if instance.id and instance.title and not instance.slug:
+        first_octet = str(instance.id).split('-')[0]
+        instance.slug = f"{slugify(instance.title).replace('-', '_')}_{first_octet}"
+    # Extract audio metadata from Mutagen
+    if instance.file and not instance.is_processed:
+        audio_meta_data = extract_audio_metadata_from_file(instance.file)
+        for key, value in audio_meta_data.items():
+            if hasattr(instance, key):
+                setattr(instance, key, value)
+        if not instance.metadata:
+            instance.metadata = {}
+        instance.metadata['audio'] = audio_meta_data
 
 
 @receiver(post_save, sender=VoiceRecording)
 def post_save_voice_recording(sender, instance, created, **kwargs):
-    if created:
-        # Async transcribe the recording
-        instance.async_transcribe()
+    # On creation, async transcribe the recording, then generate cover art
+    if created and instance.file:
+        chain(
+            async_transcribe_voice_recording.si(instance.id),
+            async_generate_cover_art.si(instance.id)
+        ).apply_async()

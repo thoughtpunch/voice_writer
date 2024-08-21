@@ -86,7 +86,7 @@ CORS_ORIGIN_ALLOW_ALL = True
 
 ROOT_URLCONF = 'config.urls'
 
-LOGIN_URL = '/common/login/'
+LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = "/"
 
 TEMPLATES = [
