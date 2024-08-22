@@ -1,6 +1,15 @@
-version: '3.8'
-
 services:
+  db:
+    image: postgres:16.4
+    environment:
+      POSTGRES_USER: vwadmin
+      POSTGRES_PASSWORD: spyglass_home_HOMEMADE_chinch
+      POSTGRES_DB: voice_writer
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
   web:
     build: .
     command: gunicorn config.wsgi:application --bind 0.0.0.0:8000
@@ -9,12 +18,16 @@ services:
     volumes:
       - .:/app
     environment:
-      - DEBUG=0
-      - DATABASE_URL=postgres://vwadmin:spyglass_home_HOMEMADE_chinch@db:5432/voice_writer
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_NAME: voice_writer
+      DATABASE_USER: vwadmin
+      DATABASE_PASSWORD: spyglass_home_HOMEMADE_chinch
+      DATABASE_URL: postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME}
+      DJANGO_SECRET_KEY: 'django-insecure-vk$80u0^o14d17&3t@@-!%c^^+&^h48vkzb!#!okzfq4^f1+bk'
+      DEBUG: '1'
+    depends_on:
+      - db
 
-  db:
-    image: postgres:13
-    environment:
-      POSTGRES_USER: vwadmin
-      POSTGRES_PASSWORD: spyglass_home_HOMEMADE_chinch
-      POSTGRES_DB: voice_writer
+volumes:
+  postgres_data:
