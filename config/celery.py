@@ -30,7 +30,7 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()
 
 # Set up Redis as the broker using the REDIS_URL environment variable.
-app.conf.broker_url = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+app.conf.broker_url = os.getenv('REDIS_URL', 'redis://redis:6379/0')
 
 
 @app.task(bind=True)

@@ -117,12 +117,15 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASE_URL = os.getenv('DATABASE_URL')
 
-DATABASES = {
-    'default': dj_database_url.config(
-        default=DATABASE_URL,
-        conn_max_age=600,  # Keeps connections open for up to 10 minutes
-    )
-}
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,  # Keeps connections open for up to 10 minutes
+        )
+    }
+else:
+    raise Exception("DATABASE_URL environment variable not set")
 
 AUTH_USER_MODEL = 'voice_writer.User'
 
@@ -171,8 +174,8 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Celery configuration
-CELERY_BROKER_URL = 'redis://localhost:6379/0'  # Use Redis as the message broker
-CELERY_RESULT_BACKEND = 'django-db'  # Store task results in the database
+CELERY_BROKER_URL = 'redis://redis:6379/0'  # Use Redis as the message broker
+CELERY_RESULT_BACKEND = 'redis://redis:6379/0'  # Store task results in Redis
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
