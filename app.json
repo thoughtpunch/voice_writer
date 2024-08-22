@@ -1,0 +1,13 @@
+{
+    "buildpacks": [
+        {
+            "url": "heroku/python"
+        }
+    ],
+    "description": "A Django application that turns spoken word recorded audio files into complete documents.",
+    "name": "Voice Writer",
+    "repository": "https://github.com/thoughtpunch/voice_writer",
+    "scripts": {
+        "postdeploy": "python manage.py migrate"
+    }
+}
