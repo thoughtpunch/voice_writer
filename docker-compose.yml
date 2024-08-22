@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    environment:
+      - DEBUG=0
+      - DATABASE_URL=postgres://vwadmin:spyglass_home_HOMEMADE_chinch@db:5432/voice_writer
+
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: vwadmin
+      POSTGRES_PASSWORD: spyglass_home_HOMEMADE_chinch
+      POSTGRES_DB: voice_writer
