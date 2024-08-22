@@ -1,14 +1,12 @@
 services:
   db:
     image: postgres:16.4
-    environment:
-      POSTGRES_USER: vwadmin
-      POSTGRES_PASSWORD: spyglass_home_HOMEMADE_chinch
-      POSTGRES_DB: voice_writer
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - ./.env
 
   web:
     build: .
@@ -17,17 +15,28 @@ services:
       - "8000:8000"
     volumes:
       - .:/app
-    environment:
-      DATABASE_HOST: db
-      DATABASE_PORT: 5432
-      DATABASE_NAME: voice_writer
-      DATABASE_USER: vwadmin
-      DATABASE_PASSWORD: spyglass_home_HOMEMADE_chinch
-      DATABASE_URL: postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME}
-      DJANGO_SECRET_KEY: 'django-insecure-vk$80u0^o14d17&3t@@-!%c^^+&^h48vkzb!#!okzfq4^f1+bk'
-      DEBUG: '1'
+    env_file:
+      - ./.env
     depends_on:
       - db
+
+  celery:
+    build: .
+    command: celery -A voice_writer worker --loglevel=INFO
+    volumes:
+      - .:/app
+    env_file:
+      - ./.env
+    depends_on:
+      - db
+    deploy:
+      resources:
+        limits:
+          cpus: "4"     # Set CPU limit
+          memory: "4G"  # Set Memory limit
+        reservations:
+          cpus: "2"     # Reserve CPU
+          memory: "2G"  # Reserve Memory
 
 volumes:
   postgres_data:

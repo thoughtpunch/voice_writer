@@ -16,7 +16,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 from lib.string import strtobool
 
-load_dotenv()
+if os.path.exists(".env"):
+    load_dotenv()
 
 # Set the start method to 'spawn'
 multiprocessing.set_start_method('spawn', force=True)
