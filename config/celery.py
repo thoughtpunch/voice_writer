@@ -8,15 +8,14 @@ from celery import Celery
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_RESULT_SERIALIZER = 'json'
-
-# Set the start method to 'spawn'
-multiprocessing.set_start_method('spawn', force=True)
-
-# Set the start method to 'spawn' for the billiard context
-context._force_start_method("spawn")
+CELERY_START_METHOD = os.getenv('CELERY_START_METHOD', 'fork')
 
 # Set the default Django settings module for the 'celery' program.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+
+# Set the start method for the multiprocessing either 'spawn' or 'fork'
+multiprocessing.set_start_method(CELERY_START_METHOD, force=True)
+context._force_start_method(CELERY_START_METHOD)
 
 app = Celery('voice_writer')
 
