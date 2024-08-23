@@ -42,7 +42,7 @@ services:
 
   celery:
     build: .
-    command: celery -A voice_writer worker --loglevel=INFO
+    command: celery -A voice_writer worker --loglevel=INFO --pool=solo
     volumes:
       - .:/app
     env_file:
