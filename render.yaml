@@ -4,7 +4,7 @@ services:
     runtime: docker
     repo: https://github.com/thoughtpunch/voice-writer.git
     branch: main
-    plan: standard
+    plan: starter
     dockerCommand: sh -c "python manage.py collectstatic --noinput && python manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:8000"
     domains:
       - voicewriter.app
@@ -26,7 +26,7 @@ services:
     runtime: docker
     repo: https://github.com/thoughtpunch/voice-writer.git
     branch: main
-    plan: standard
+    plan: starter
     dockerCommand: celery -A voice_writer worker --loglevel=INFO
     envVars:
       - fromGroup: voice-writer-env-group
@@ -42,14 +42,14 @@ services:
 
   - type: redis
     name: voice-writer-redis
-    plan: standard
+    plan: free
     ipAllowList: [] # No entries in the IP allow list
 
 databases:
   - name: voice-writer-db
     databaseName: voice_writer
     user: voice_writer
-    plan: standard
+    plan: free
     region: oregon
     ipAllowList: [] # No entries in the IP allow list
     postgresMajorVersion: "16"
