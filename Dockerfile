@@ -14,7 +14,7 @@ WORKDIR /app
 # Install dependencies
 COPY requirements.txt /app/
 RUN python -m pip install --upgrade pip setuptools wheel
-RUN pip install -r requirements.txt
+RUN pip install --default-timeout=10000 -r requirements.txt
 
 # Copy the entire project to the working directory
 COPY . /app/

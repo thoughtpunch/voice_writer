@@ -11,7 +11,7 @@ from voice_writer.views.voice import (
 )
 from voice_writer.views.author import author_profile, update_author
 
-# HTMX
+# HTML
 urlpatterns = [
     path('', index, name='index'),
     path('recordings/', voice_recording_list, name='voice_recording_list'),

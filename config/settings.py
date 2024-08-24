@@ -61,7 +61,6 @@ INSTALLED_APPS = [
     'django_celery_beat',
     'corsheaders',
     'storages',
-    'django_htmx',
     'graphene_django',
     'voice_writer'
 ]
@@ -75,11 +74,21 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'django_htmx.middleware.HtmxMiddleware',
     # 👇 Add this line here
     'corsheaders.middleware.CorsMiddleware',
     # Add above line just before this line 👇
     'django.middleware.common.CommonMiddleware',
+    # Health check middleware
+    'health_check',                             # required
+    'health_check.db',                          # stock Django health checkers
+    'health_check.cache',
+    'health_check.storage',
+    'health_check.contrib.migrations',
+    'health_check.contrib.celery',              # requires celery
+    'health_check.contrib.celery_ping',         # requires celery
+    'health_check.contrib.psutil',              # disk and memory utilization; requires psutil
+    'health_check.contrib.s3boto3_storage',     # requires boto3 and S3BotoStorage backend
+    'health_check.contrib.redis',               # requires Redis broker
 ]
 
 # 👇 Add this line here
