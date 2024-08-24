@@ -2,7 +2,7 @@ services:
   - type: web
     name: voice-writer-web
     runtime: docker
-    repo: https://github.com/thoughtpunch/voice-writer.git
+    repo: https://github.com/thoughtpunch/voice_writer.git
     branch: main
     plan: starter
     dockerCommand: sh -c "python manage.py collectstatic --noinput && python manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:8000"
@@ -24,7 +24,7 @@ services:
   - type: worker
     name: voice-writer-celery
     runtime: docker
-    repo: https://github.com/thoughtpunch/voice-writer.git
+    repo: https://github.com/thoughtpunch/voice_writer.git
     branch: main
     plan: starter
     dockerCommand: celery -A voice_writer worker --loglevel=INFO
