@@ -88,7 +88,6 @@ MIDDLEWARE = [
     'health_check.contrib.celery_ping',         # requires celery
     'health_check.contrib.psutil',              # disk and memory utilization; requires psutil
     'health_check.contrib.s3boto3_storage',     # requires boto3 and S3BotoStorage backend
-    'health_check.contrib.redis',               # requires Redis broker
 ]
 
 # 👇 Add this line here
