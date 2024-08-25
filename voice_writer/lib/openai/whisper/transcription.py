@@ -1,11 +1,14 @@
 import os
+import tempfile
+import requests
 from typing import Optional
 from openai import OpenAI
 
 
 class VoiceTranscriber:
-    def __init__(self, audio_file_path: str, language: str):
-        self.audio_file_path = audio_file_path
+    def __init__(self, audio_file_url: str, audio_file_format: str, language: str):
+        self.audio_file_url = audio_file_url
+        self.audio_file_format = audio_file_format
         self.language = language
         self.transcription = None
         self.srt_subtitles = ""
@@ -18,14 +21,27 @@ class VoiceTranscriber:
         return self
 
     def _whisper_transcribe_audio(self) -> Optional[str]:
-        with open(self.audio_file_path, "rb") as audio_file:
-            response = self.client.audio.transcriptions.create(
-                model="whisper-1",
-                file=audio_file,
-                language="en",
-                response_format="verbose_json"
-            )
-            self.transcription = response
+        # Download the file from the URL
+        response = requests.get(self.audio_file_url)
+        response.raise_for_status()
+
+        # Use a temporary file to save the downloaded audio file
+        temp_format = f".{self.audio_file_format}"
+        with tempfile.NamedTemporaryFile(delete=True, suffix=temp_format) as temp_file:
+            temp_file.write(response.content)
+            temp_file.flush()  # Ensure all data is written to disk
+
+            # Open the temporary file and use it with the transcription client
+            with open(temp_file.name, "rb") as audio_file:
+                response = self.client.audio.transcriptions.create(
+                    model="whisper-1",
+                    file=audio_file,
+                    language="en",
+                    response_format="verbose_json"
+                )
+
+                # Save the transcription to the instance
+                self.transcription = response
 
     def _generate_srt(self) -> str:
         if self.transcription:

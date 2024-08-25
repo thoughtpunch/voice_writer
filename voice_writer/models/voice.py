@@ -74,7 +74,8 @@ class VoiceRecording(BaseModel):
         if not self.is_processed:
             # 1. transcribe the audio recording use OpenAI whisper
             transcription = VoiceTranscriber(
-                audio_file_path=self.file.url,
+                audio_file_url=self.file.url,
+                audio_file_format=self.format.lower(),
                 language=self.language,
             ).transcribe()
 
