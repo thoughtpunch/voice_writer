@@ -1,5 +1,5 @@
 # Base stage: Install dependencies
-FROM python:3.12-alpine as base
+FROM python:3.12-alpine AS base
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -36,6 +36,3 @@ WORKDIR /app
 
 # Copy the application code
 COPY . /app/
-
-# Set up entry point for the Django web service (adjust as necessary for Celery)
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "config.wsgi:application"]
