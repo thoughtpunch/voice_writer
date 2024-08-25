@@ -32,7 +32,7 @@ class Author(BaseModel):
     influences = models.TextField(blank=True, null=True)
 
     # Portrait/Avatar
-    portrait = models.ImageField(
+    portrait = models.FileField(
         upload_to=f"{settings.USER_UPLOADS_PATH}/images",
         blank=True,
         null=True
