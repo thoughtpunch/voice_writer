@@ -10,7 +10,7 @@ RUN apk add --no-cache --virtual .build-deps \
     gcc \
     musl-dev \
     libffi-dev \
-    openssl-dev \
+    openssl-dev
 
 # Set the working directory
 WORKDIR /app
