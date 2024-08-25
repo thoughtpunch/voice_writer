@@ -11,6 +11,7 @@ from django.core.files.base import ContentFile
 from django.conf import settings
 from django.utils import timezone
 from django.utils.text import slugify
+from lib.languages import LanguageChoices
 from voice_writer.lib.openai.whisper.transcription import VoiceTranscriber
 from voice_writer.lib.openai.dalle.generate_cover_art import CoverArtGenerator
 from voice_writer.lib.openai.chatgpt.summarize_transcript import (
@@ -34,6 +35,11 @@ class VoiceRecording(BaseModel):
     title = models.CharField(max_length=255, blank=True, null=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     description = models.TextField(blank=True, null=True)
+    language = models.CharField(
+        max_length=2,
+        choices=LanguageChoices.choices,
+        default=LanguageChoices.ENGLISH,
+    )
     cover = models.FileField(
         upload_to=f"{settings.USER_UPLOADS_PATH}/voice_cover_art",
         blank=True
@@ -68,7 +74,8 @@ class VoiceRecording(BaseModel):
         if not self.is_processed:
             # 1. transcribe the audio recording use OpenAI whisper
             transcription = VoiceTranscriber(
-                audio_file_path=self.file.url
+                audio_file_path=self.file.url,
+                language=self.language,
             ).transcribe()
 
             # 2. Create and save a VoiceTranscription model
