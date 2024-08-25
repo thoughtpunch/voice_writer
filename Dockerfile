@@ -10,7 +10,11 @@ RUN apk add --no-cache --virtual .build-deps \
     gcc \
     musl-dev \
     libffi-dev \
-    openssl-dev
+    openssl-dev \
+    && apk add --no-cache \
+    postgresql-dev \
+    python3-dev \
+    libpq
 
 # Set the working directory
 WORKDIR /app
@@ -24,11 +28,8 @@ RUN python -m pip install --upgrade pip setuptools wheel \
 FROM python:3.12-alpine
 
 # Copy installed dependencies from the base stage
-COPY --from=base /usr/lib/python3.12/site-packages /usr/lib/python3.12/site-packages
-COPY --from=base /opt/venv /opt/venv
-
-# Set environment variables for the virtual environment
-ENV PATH="/opt/venv/bin:$PATH"
+COPY --from=base /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=base /usr/local/bin /usr/local/bin
 
 # Set the working directory
 WORKDIR /app
