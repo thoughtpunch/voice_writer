@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:16.4
+    image: postgres:16.4-alpine
     ports:
       - "5432:5432"
     volumes:
@@ -56,14 +56,6 @@ services:
         condition: service_started
       web:
         condition: service_started
-    deploy:
-      resources:
-        limits:
-          cpus: "4"     # Set CPU limit
-          memory: "4G"  # Set Memory limit
-        reservations:
-          cpus: "2"     # Reserve CPU
-          memory: "2G"  # Reserve Memory
 
 volumes:
   postgres_data:
