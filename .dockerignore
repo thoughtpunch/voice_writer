@@ -1,14 +1,60 @@
+# Ignore Python virtual environments
+venv/
+env/
+.venv/
+
 # Ignore Python cache files
 __pycache__/
 *.pyc
 *.pyo
 
-# Ignore Django migrations
-*/migrations/*
-
-# Ignore environment files
+# Ignore local environment files
 .env
+*.env
 
-# Ignore local files
+# Ignore Docker-related files
+Dockerfile*
+docker-compose.yml
+
+# Ignore logs and database files
+*.log
+*.sqlite3
+
+# Ignore media/uploads (if applicable)
 media/
+uploads/
+
+# Ignore IDE/editor config files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Ignore node_modules if using Node.js for frontend (e.g., with React)
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Ignore static files (if generated during the build process)
+staticfiles/
 static/
+
+# Ignore test coverage reports
+htmlcov/
+.coverage
+*.cover
+*.py,cover
+
+# Ignore build artifacts
+build/
+dist/
+*.egg-info/
+.installed.cfg
+*.egg
+.Python
+
+# Ignore miscellaneous system files
+.DS_Store
+*.swp
+*.swo
