@@ -1,38 +1,30 @@
-# Base stage: Install dependencies
-FROM python:3.12-alpine AS base
+ARG PYTHON_VERSION=3.12-slim-bullseye
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+FROM python:${PYTHON_VERSION}
 
-# Install system dependencies in one layer
-RUN apk add --no-cache --virtual .build-deps \
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+# install psycopg2 dependencies.
+RUN apt-get update && apt-get install -y \
+    libpq-dev \
     gcc \
-    musl-dev \
-    libffi-dev \
-    openssl-dev \
-    && apk add --no-cache \
-    postgresql-dev \
-    python3-dev \
-    libpq
+    && rm -rf /var/lib/apt/lists/*
 
-# Set the working directory
-WORKDIR /app
+RUN mkdir -p /code
 
-# Install Python dependencies
-COPY requirements.txt /app/
-RUN python -m pip install --upgrade pip setuptools wheel \
-    && pip install --no-cache-dir --default-timeout=10000 -r requirements.txt
+WORKDIR /code
 
-# Final stage: Build the web and celery services
-FROM python:3.12-alpine
+COPY requirements.txt /tmp/requirements.txt
+RUN set -ex && \
+    pip install --upgrade pip && \
+    pip install -r /tmp/requirements.txt && \
+    rm -rf /root/.cache/
+COPY . /code
 
-# Copy installed dependencies from the base stage
-COPY --from=base /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
-COPY --from=base /usr/local/bin /usr/local/bin
+ENV SECRET_KEY "HNOjxO4RwEnhUQyqnHqyHItRV0AvB0cWjZX2ljVeMriOlR4iEg"
+RUN python manage.py collectstatic --noinput
 
-# Set the working directory
-WORKDIR /app
+EXPOSE 8000
 
-# Copy the application code
-COPY . /app/
+CMD ["gunicorn", "--bind", ":8000", "--workers", "2", "config.wsgi"]
