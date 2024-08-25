@@ -41,7 +41,7 @@ class VoiceTranscriber:
                 )
 
                 # Save the transcription to the instance
-                self.transcription = response
+                self.transcription = response.to_dict()
 
     def _generate_srt(self) -> str:
         if self.transcription:
