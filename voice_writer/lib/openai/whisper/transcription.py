@@ -2,6 +2,7 @@ import os
 from typing import Optional
 from openai import OpenAI
 
+
 class VoiceTranscriber:
     def __init__(self, audio_file_path: str, language: str):
         self.audio_file_path = audio_file_path
