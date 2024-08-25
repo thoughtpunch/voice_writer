@@ -80,9 +80,6 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     # Health check middleware
     'health_check',                             # required
-    'health_check.db',                          # stock Django health checkers
-    'health_check.cache',
-    'health_check.storage',
 ]
 
 # 👇 Add this line here
