@@ -86,6 +86,19 @@ MIDDLEWARE = [
 
 # 👇 Add this line here
 CORS_ORIGIN_ALLOW_ALL = True
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:8000',
+    'http://*.herokuapp.com/',
+    'https://*.herokuapp.com/',
+    'https://*.voicewriter.app',
+    'https://*.voicewriter.pro',
+    'https://*.voicewriter.dev',
+]
+
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 ROOT_URLCONF = 'config.urls'
 
