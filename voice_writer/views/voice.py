@@ -70,3 +70,4 @@ def edit_voice_recording(request, id):
 def voice_recording_list(request):
     recordings = VoiceRecording.objects.filter(user=request.user)
     return render(request, 'voice_writer/voice/list.html', {'recordings': recordings})
+

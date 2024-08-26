@@ -54,7 +54,7 @@ class VoiceRecording(BaseModel):
     )
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     title = models.CharField(max_length=255, blank=True, null=True)
-    slug = models.SlugField(max_length=255, unique=True, blank=True)
+    slug = models.SlugField(max_length=255, unique=True, null=True, blank=True)
     description = models.TextField(blank=True, null=True)
     language = models.CharField(
         max_length=2,

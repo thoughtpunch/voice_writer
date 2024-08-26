@@ -147,7 +147,8 @@ class VoiceRecordingCollectionAdmin(admin.ModelAdmin):
                     VoiceRecording.objects.create(
                         collection=voice_recording_collection,
                         user=voice_recording_collection.user,
-                        file=file
+                        file=file,
+                        slug=None, # This will be set automatically
                     )
                     voice_recording_collection.recording_count += 1
                     voice_recording_collection.save()
