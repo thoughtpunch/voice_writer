@@ -18,7 +18,19 @@ from .models import (
 
 class VoiceRecordingInline(admin.TabularInline):
     model = VoiceRecording
-    extra = 0
+    extra = 0  # Do not display any empty forms by default
+    fields = ['title', 'slug', 'file', 'duration_ms', 'format', 'is_processed', 'collection']
+    readonly_fields = ['duration_ms', 'file_size', 'format', 'is_processed']
+    show_change_link = True  # Allows navigating to the full change form of each recording
+
+    def get_formset(self, request, obj=None, **kwargs):
+        formset = super().get_formset(request, obj, **kwargs)
+
+        if obj and hasattr(obj, 'user'):
+            # Limit the collection queryset to collections associated with the current user
+            formset.form.base_fields['collection'].queryset = VoiceRecordingCollection.objects.filter(user=obj.user)
+
+        return formset
 
 
 class VoiceTranscriptionInline(admin.TabularInline):
@@ -97,6 +109,24 @@ class VoiceRecordingAdmin(admin.ModelAdmin):
 
 
 class VoiceRecordingCollectionAdmin(admin.ModelAdmin):
+    inlines = [VoiceRecordingInline]
+    list_display = (
+        'title',
+        'slug',
+        'description',
+        'cover',
+        'recording_count',
+        'user',
+        'created_at'
+    )
+    search_fields = ('title', 'description', 'user__username')
+    list_filter = ('title', 'slug', 'description', 'user', 'created_at')
+    readonly_fields = (
+        'created_at',
+        'updated_at',
+        'slug',
+        'recording_count',
+    )
     form = VoiceRecordingCollectionForm
 
     def get_urls(self):
@@ -114,10 +144,15 @@ class VoiceRecordingCollectionAdmin(admin.ModelAdmin):
             if form.is_valid():
                 voice_recording_collection = form.save(user=request.user)
                 for file in files:
-                    VoiceRecording.objects.create(collection=voice_recording_collection, file=file)
+                    VoiceRecording.objects.create(
+                        collection=voice_recording_collection,
+                        user=voice_recording_collection.user,
+                        file=file
+                    )
+                    voice_recording_collection.recording_count += 1
+                    voice_recording_collection.save()
                 self.message_user(request, "Voice recordings have been uploaded successfully.")
-                return redirect('admin:yourapp_voicerecordingcollection_changelist')  # Replace with your app's name
-
+                return redirect('admin:voice_writer_voicerecordingcollection_changelist')
         else:
             form = VoiceRecordingCollectionForm()
 

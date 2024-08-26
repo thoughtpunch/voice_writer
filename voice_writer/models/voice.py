@@ -215,10 +215,22 @@ class VoiceTranscription(BaseModel):
             self.metadata = summary if overwrite_values or not self.metadata else self.metadata
             self.save()
 
-            # Set related attributes, considering the overwrite flag
-            self.recording.keywords = summary.get('keywords') if overwrite_values or not self.recording.keywords else self.recording.keywords
-            self.recording.title = summary.get('title') if overwrite_values or not self.recording.title else self.recording.title
-            self.recording.description = summary.get('summary') if overwrite_values or not self.recording.description else self.recording.description
+            # Write data back up to the parent VoiceRecording model
+            # - Set Keywords if not set
+            if summary.get('keywords') and (overwrite_values or not self.recording.keywords):
+                self.recording.keywords = summary.get('keywords')
+
+            # - Set Title and Slug if not set
+            if summary.get('title') and (overwrite_values or not self.recording.title):
+                self.recording.title = summary.get('title')
+                first_octet = str(self.recording.id).split('-')[0]
+                self.recording.slug = f"{slugify(self.recording.title).replace('-', '_')}_{first_octet}"
+
+            # - Set Description if not set
+            if summary.get('summary') and (overwrite_values or not self.recording.description):
+                self.recording.description = summary.get('summary')
+
+            # Save the parent VoiceRecording model
             self.recording.save()
 
             return summary
@@ -228,7 +240,7 @@ class VoiceTranscription(BaseModel):
 
 @receiver(pre_save, sender=VoiceRecordingCollection)
 def pre_save_voice_recording_collection(sender, instance, **kwargs):
-     # Set slug if not set
+    # Set slug if not set
     if instance.id and instance.title and not instance.slug:
         first_octet = str(instance.id).split('-')[0]
         instance.slug = f"{slugify(instance.title).replace('-', '_')}_{first_octet}"
@@ -236,10 +248,6 @@ def pre_save_voice_recording_collection(sender, instance, **kwargs):
 
 @receiver(pre_save, sender=VoiceRecording)
 def pre_save_voice_recording(sender, instance, **kwargs):
-    # Set slug if not set
-    if instance.id and instance.title and not instance.slug:
-        first_octet = str(instance.id).split('-')[0]
-        instance.slug = f"{slugify(instance.title).replace('-', '_')}_{first_octet}"
     # Extract audio metadata from Mutagen
     if instance.file and not instance.is_processed:
         audio_meta_data = extract_audio_metadata_from_file(instance.file)
