@@ -101,13 +101,6 @@ class Manuscript(BaseModel):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE
     )
-    # Voice Recording this manuscript is based on
-    recording = models.ForeignKey(
-        VoiceRecording,
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True
-    )
     type = models.CharField(
         max_length=50,
         choices=ManuscriptType.choices,
@@ -157,6 +150,10 @@ class Document(BaseModel):
     section = models.ForeignKey(
         Section,
         on_delete=models.CASCADE,
+        related_name='documents'
+    )
+    recordings = models.ManyToManyField(
+        VoiceRecording,
         related_name='documents'
     )
     title = models.CharField(max_length=255)
