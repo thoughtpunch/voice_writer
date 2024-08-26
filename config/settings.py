@@ -202,6 +202,7 @@ CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 # Storage backend settings
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+DATA_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100MB
 
 # Configure Cloudflare R2 credentials and bucket
 AWS_ACCESS_KEY_ID = os.getenv('R2_ACCESS_KEY_ID')
