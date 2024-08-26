@@ -30,7 +30,28 @@ class AudioSource(models.TextChoices):
     API = 'api', 'API'
 
 
+class VoiceRecordingCollection(BaseModel):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    title = models.CharField(max_length=255, blank=True, null=True)
+    slug = models.SlugField(max_length=255, unique=True, blank=True)
+    description = models.TextField(blank=True, null=True)
+    cover = models.FileField(
+        upload_to=f"{settings.USER_UPLOADS_PATH}/voice_collection_cover_art",
+        blank=True
+    )
+    recording_count = models.PositiveBigIntegerField(default=0)
+    keywords = models.JSONField(blank=True, null=True)
+    metadata = models.JSONField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
 class VoiceRecording(BaseModel):
+    collection = models.ForeignKey(
+        VoiceRecordingCollection,
+        related_name='recordings',
+        on_delete=models.CASCADE
+    )
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     title = models.CharField(max_length=255, blank=True, null=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
