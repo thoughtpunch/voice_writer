@@ -1,7 +1,31 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from voice_writer.models.voice import VoiceRecording
-from voice_writer.forms.voice import VoiceRecordingForm  # Assuming you have a form defined
+from voice_writer.models.voice import (
+    VoiceRecording,
+    VoiceRecordingCollection,
+)
+from voice_writer.forms.voice import (
+    VoiceRecordingForm,
+    VoiceRecordingCollectionForm,
+)
+
+
+@login_required
+def upload_voice_recordings(request):
+    if request.method == 'POST':
+        form = VoiceRecordingCollectionForm(request.POST, request.FILES)
+        files = request.FILES.getlist('files')
+
+        if form.is_valid():
+            voice_recording_collection = form.save(user=request.user)
+            for file in files:
+                VoiceRecording.objects.create(collection=voice_recording_collection, file=file)
+            return redirect('collection_detail', pk=voice_recording_collection.pk)  # Redirect to a success page
+
+    else:
+        form = VoiceRecordingCollectionForm()
+
+    return render(request, 'upload_voice_recordings.html', {'form': form})
 
 
 @login_required

@@ -1,16 +1,24 @@
 from django.contrib import admin
 from django.utils.html import format_html
+from django.shortcuts import render, redirect
+from django.urls import path
 import datetime
-
+from voice_writer.forms.voice import VoiceRecordingCollectionForm
 from .models import (
     Author,
     User,
     VoiceRecording,
+    VoiceRecordingCollection,
     VoiceTranscription,
     Manuscript,
     Section,
     Document
 )
+
+
+class VoiceRecordingInline(admin.TabularInline):
+    model = VoiceRecording
+    extra = 0
 
 
 class VoiceTranscriptionInline(admin.TabularInline):
@@ -88,9 +96,47 @@ class VoiceRecordingAdmin(admin.ModelAdmin):
     duration_display.short_description = 'Duration'
 
 
+class VoiceRecordingCollectionAdmin(admin.ModelAdmin):
+    form = VoiceRecordingCollectionForm
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('add/', self.admin_site.admin_view(self.add_view), name='voicerecordingcollection_add'),
+        ]
+        return custom_urls + urls
+
+    def add_view(self, request, form_url='', extra_context=None):
+        if request.method == 'POST':
+            form = VoiceRecordingCollectionForm(request.POST, request.FILES)
+            files = request.FILES.getlist('files')
+
+            if form.is_valid():
+                voice_recording_collection = form.save(user=request.user)
+                for file in files:
+                    VoiceRecording.objects.create(collection=voice_recording_collection, file=file)
+                self.message_user(request, "Voice recordings have been uploaded successfully.")
+                return redirect('admin:yourapp_voicerecordingcollection_changelist')  # Replace with your app's name
+
+        else:
+            form = VoiceRecordingCollectionForm()
+
+        context = {
+            **self.admin_site.each_context(request),
+            'form': form,
+            'opts': self.model._meta,
+            'form_url': form_url,
+            'add': True,
+            'change': False,
+        }
+
+        return render(request, 'admin/voicerecordingcollection_add_form.html', context)
+
+
 # REGISTER ADMIN MODELS
 admin.site.register(Author)
 admin.site.register(User)
+admin.site.register(VoiceRecordingCollection, VoiceRecordingCollectionAdmin)
 admin.site.register(VoiceRecording, VoiceRecordingAdmin)
 admin.site.register(VoiceTranscription)
 admin.site.register(Manuscript)

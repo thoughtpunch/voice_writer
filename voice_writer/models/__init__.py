@@ -1,6 +1,6 @@
 from .author import Author
 from .manuscript import Manuscript, Section, Document
-from .voice import VoiceRecording, VoiceTranscription
+from .voice import VoiceRecording, VoiceRecordingCollection, VoiceTranscription
 from .user import User
 
 __all__ = [
@@ -9,6 +9,7 @@ __all__ = [
     "Section",
     "Document",
     "VoiceRecording",
+    "VoiceRecordingCollection",
     "VoiceTranscription",
     "User"
 ]

@@ -226,6 +226,14 @@ class VoiceTranscription(BaseModel):
             raise Exception("Transcription not available or user not set")
 
 
+@receiver(pre_save, sender=VoiceRecordingCollection)
+def pre_save_voice_recording_collection(sender, instance, **kwargs):
+     # Set slug if not set
+    if instance.id and instance.title and not instance.slug:
+        first_octet = str(instance.id).split('-')[0]
+        instance.slug = f"{slugify(instance.title).replace('-', '_')}_{first_octet}"
+
+
 @receiver(pre_save, sender=VoiceRecording)
 def pre_save_voice_recording(sender, instance, **kwargs):
     # Set slug if not set
