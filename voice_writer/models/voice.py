@@ -194,18 +194,30 @@ class VoiceTranscription(BaseModel):
 
     def summarize(self, overwrite_values: Optional[bool] = True):
         if self.transcription and self.user:
-            # Use the filename as the title if it's not set
-            summary_title = (
-                self.recording.title
-                if self.recording.title
-                else os.path.basename(self.recording.file.name).split('.')[0]
-            )
-            cleaned_summary_title = re.sub(r'\W+', ' ', summary_title).strip().lower()
+            summary_title = None
+            summary_author = None
+
+            audio_metadata = self.recording.metadata.get('audio', {})
+
+            # GET SUMMARY TITLE AND AUTHOR
+            if self.recording.title:
+                summary_title = self.recording.title
+            elif 'title' in audio_metadata:
+                summary_title = audio_metadata['title']
+            else:
+                summary_title = os.path.basename(self.recording.file.name).split('.')[0]
+
+            if 'artist' in audio_metadata:
+                summary_author = audio_metadata['artist']
+            elif 'author' in audio_metadata:
+                summary_author = audio_metadata['author']
+            else:
+                summary_author = f"{self.user.first_name} {self.user.last_name}"
 
             # Summarize the transcription with OpenAI
             summarizer = TranscriptionSummarizer(
-                author=f"{self.user.first_name} {self.user.last_name}",
-                title=cleaned_summary_title,
+                author=summary_author,
+                title=summary_title,
                 transcription=self.transcription
             )
             summary = summarizer.summarize()
