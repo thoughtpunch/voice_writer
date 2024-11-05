@@ -1,32 +1,8 @@
 services:
-  db:
-    image: postgres:16.4-alpine
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    env_file:
-      - ./.env
-    networks:
-      - app-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U voice_writer"]
-      interval: 10s
-      retries: 5
-
-  redis:
-    image: redis:7.4-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - app-network
-
   web:
     build:
-        context: .
-        dockerfile: Dockerfile.web
+      context: .
+      dockerfile: Dockerfile.web
     ports:
       - "8000:8000"
     volumes:
@@ -35,33 +11,20 @@ services:
       - ./.env
     networks:
       - app-network
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_started
 
-  celery:
-    build:
-        context: .
-        dockerfile: Dockerfile.worker
-    volumes:
-      - .:/app
-    env_file:
-      - ./.env
-    networks:
-      - app-network
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_started
-      web:
-        condition: service_started
-
-volumes:
-  postgres_data:
-  redis_data:
+  # celery:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.worker
+  #   volumes:
+  #     - .:/app
+  #   env_file:
+  #     - ./.env
+  #   networks:
+  #     - app-network
+  #   depends_on:
+  #     web:
+  #       condition: service_started
 
 networks:
   app-network:

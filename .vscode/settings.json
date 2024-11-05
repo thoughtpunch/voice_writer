@@ -1,9 +1,7 @@
 {
-    "python.analysis.typeCheckingMode": "basic",
-    "cSpell.words": [
-        "GRAPHENE"
-    ],
-    "yaml.schemas": {
-        "https://render.com/schema/render.yaml.json": "file:///Users/danielbarrett/sites/voice_writer/render.yml"
-    }
+  "python.analysis.typeCheckingMode": "basic",
+  "cSpell.words": ["GRAPHENE", "SUPABASE"],
+  "yaml.schemas": {
+    "https://render.com/schema/render.yaml.json": "file:///Users/danielbarrett/sites/voice_writer/render.yml"
+  }
 }

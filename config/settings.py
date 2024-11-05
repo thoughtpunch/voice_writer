@@ -9,11 +9,13 @@ https://docs.djangoproject.com/en/5.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
-import os
-import dj_database_url
 import multiprocessing
+import os
 from pathlib import Path
+
+import dj_database_url
 from dotenv import load_dotenv
+
 from lib.string import strtobool
 
 if os.path.exists(".env"):
@@ -67,7 +69,6 @@ INSTALLED_APPS = [
     'django_celery_beat',
     'corsheaders',
     'storages',
-    'graphene_django',
     'voice_writer'
 ]
 
@@ -189,8 +190,8 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Celery configuration
-CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://redis:6379/0')
-CELERY_RESULT_BACKEND = os.getenv('REDIS_URL', 'redis://redis:6379/0')
+CELERY_BROKER_URL = os.getenv('DATABASE_URL')
+CELERY_RESULT_BACKEND = 'django-db'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
@@ -205,12 +206,10 @@ DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 DATA_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100MB
 
 # Configure Cloudflare R2 credentials and bucket
-AWS_ACCESS_KEY_ID = os.getenv('R2_ACCESS_KEY_ID')
-AWS_SECRET_ACCESS_KEY = os.getenv('R2_SECRET_ACCESS_KEY')
-AWS_STORAGE_BUCKET_NAME = os.getenv('R2_BUCKET_NAME', 'voice-writer-dev')
-AWS_S3_ENDPOINT_URL = os.getenv('R2_ENDPOINT_URL', 'https://1144e4c26754e19eb87bbd87012d2227.r2.cloudflarestorage.com')
-# Optional: Control file naming
-AWS_LOCATION = 'media'
+AWS_ACCESS_KEY_ID = os.getenv('SUPABASE_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = os.getenv('SUPABASE_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = os.getenv('SUPABASE_BUCKET_NAME')
+AWS_S3_ENDPOINT_URL = os.getenv('SUPABASE_ENDPOINT_URL')
 
 # Optional: Public/Private media settings
 AWS_QUERYSTRING_AUTH = True  # Generate signed URLs for private media

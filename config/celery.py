@@ -1,7 +1,9 @@
 # myproject/celery.py
 from __future__ import absolute_import, unicode_literals
-import os
+
 import multiprocessing
+import os
+
 from billiard import context
 from celery import Celery
 
@@ -28,8 +30,7 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 # Load task modules from all registered Django app configs.
 app.autodiscover_tasks()
 
-# Set up Redis as the broker using the REDIS_URL environment variable.
-app.conf.broker_url = os.getenv('REDIS_URL', 'redis://redis:6379/0')
+app.conf.broker_url = os.getenv('DATABASE_URL')
 
 
 @app.task(bind=True)
