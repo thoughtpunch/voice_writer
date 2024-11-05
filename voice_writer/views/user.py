@@ -1,45 +1,55 @@
 # voice_writer/views/user.py
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from supabase import create_client, Client
 from django.conf import settings
-from django.contrib.auth import login, logout
-from django.shortcuts import redirect, render
-from supabase import Client, create_client
-
-from ..models.user import User
+from voice_writer.models.user import User
 
 # Initialize Supabase client
 supabase: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
 
 
 def signup_user(request):
-    """
-    Register a new user with Supabase and create a corresponding Django User entry.
-    """
     if request.method == "POST":
-        email = request.POST['email']
-        password = request.POST['password']
+        email = request.POST.get('email')
+        password = request.POST.get('password')
         first_name = request.POST.get('first_name', '')
         last_name = request.POST.get('last_name', '')
 
-        # Sign up the user with Supabase
+        if not email or not password:
+            messages.error(request, "Email and password are required.")
+            return render(request, 'voice_writer/user/signup.html')
+
         try:
-            response = supabase.auth.sign_up({'email': email, 'password': password})
-            if response.get('error'):
-                # Handle signup error
-                return render(request, 'voice_writer/user/signup.html', {'error': response['error']['message']})
+            # Sign up the user with Supabase
+            response = supabase.auth.sign_up({
+                'email': email,
+                'password': password,
+                'options': {
+                    'data': {
+                        'first_name': first_name,
+                        'last_name': last_name
+                    }
+                }
+            })
+
+            if response.user:
+                # Create a Django user if Supabase signup is successful
+                user = User.objects.create_user(
+                    email=email,
+                    password=password,
+                    first_name=first_name,
+                    last_name=last_name
+                )
+                login(request, user)  # Automatically log in the new user
+                messages.success(request, "Signup successful!")
+                return redirect('home')  # Redirect to the home page after signup
+            else:
+                messages.error(request, "Signup failed. Please try again.")
         except Exception as e:
-            return render(request, 'voice_writer/user/signup.html', {'error': str(e)})
+            messages.error(request, f"An error occurred: {str(e)}")
 
-        # Create a Django user if Supabase signup is successful
-        user = User.objects.create_user(
-            email=email,
-            password=password,
-            first_name=first_name,
-            last_name=last_name
-        )
-        login(request, user)  # Automatically log in the new user
-        return redirect('home')  # Redirect to the home page after signup
-
-    return render(request, 'voice_writer/user/signup.html')  # Render signup page if GET request
+    return render(request, 'voice_writer/user/signup.html')
 
 
 def login_user(request):
