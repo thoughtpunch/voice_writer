@@ -12,20 +12,6 @@ services:
     networks:
       - app-network
 
-  # celery:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile.worker
-  #   volumes:
-  #     - .:/app
-  #   env_file:
-  #     - ./.env
-  #   networks:
-  #     - app-network
-  #   depends_on:
-  #     web:
-  #       condition: service_started
-
 networks:
   app-network:
     driver: bridge

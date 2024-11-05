@@ -34,10 +34,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY')
 
+# SUPABASE
+SUPABASE_URL = os.getenv('SUPABASE_URL')
+SUPABASE_KEY = os.getenv('SUPABASE_KEY')
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = bool(strtobool(os.getenv('DEBUG', 'False')))
 ALLOWED_HOSTS = [
-    '.herokuapp.com',
     'localhost',
     '.voicewriter.app',
     '.voicewriter.pro',
@@ -65,8 +68,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_extensions',
-    'django_celery_results',
-    'django_celery_beat',
     'corsheaders',
     'storages',
     'voice_writer'
@@ -91,8 +92,6 @@ CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:8000',
-    'http://*.herokuapp.com/',
-    'https://*.herokuapp.com/',
     'https://*.voicewriter.app',
     'https://*.voicewriter.pro',
     'https://*.voicewriter.dev',
@@ -189,27 +188,15 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Celery configuration
-CELERY_BROKER_URL = os.getenv('DATABASE_URL')
-CELERY_RESULT_BACKEND = 'django-db'
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'UTC'
-CELERY_START_METHOD = os.getenv('CELERY_START_METHOD','fork')
-
-# Celery Beat settings (for periodic tasks)
-CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
-
 # Storage backend settings
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 DATA_UPLOAD_MAX_MEMORY_SIZE = 104857600  # 100MB
 
 # Configure Cloudflare R2 credentials and bucket
-AWS_ACCESS_KEY_ID = os.getenv('SUPABASE_ACCESS_KEY_ID')
-AWS_SECRET_ACCESS_KEY = os.getenv('SUPABASE_SECRET_ACCESS_KEY')
-AWS_STORAGE_BUCKET_NAME = os.getenv('SUPABASE_BUCKET_NAME')
-AWS_S3_ENDPOINT_URL = os.getenv('SUPABASE_ENDPOINT_URL')
+AWS_ACCESS_KEY_ID = os.getenv('SUPABASE_STORAGE_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = os.getenv('SUPABASE_STORAGE_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = os.getenv('SUPABASE_STORAGE_BUCKET_NAME')
+AWS_S3_ENDPOINT_URL = os.getenv('SUPABASE_STORAGE_ENDPOINT_URL')
 
 # Optional: Public/Private media settings
 AWS_QUERYSTRING_AUTH = True  # Generate signed URLs for private media
