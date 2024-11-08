@@ -1,8 +1,10 @@
 # voice_writer/views/user.py
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from supabase import create_client, Client
 from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth import login
+from django.shortcuts import redirect, render
+from supabase import Client, create_client
+
 from voice_writer.models.user import User
 
 # Initialize Supabase client
@@ -32,7 +34,6 @@ def signup_user(request):
                     }
                 }
             })
-
             if response.user:
                 # Create a Django user if Supabase signup is successful
                 user = User.objects.create_user(
