@@ -6,7 +6,6 @@ from django.db import models
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.utils import timezone
-from django.utils.text import slugify
 
 from common.models import BaseModel
 from lib.languages import LanguageChoices
@@ -94,6 +93,21 @@ class VoiceRecording(BaseModel):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def save(self, *args, **kwargs):
+        # Ensure a collection exists before saving the recording
+        if not self.collection:
+            # Create and assign a new collection for this recording
+            self.collection = VoiceRecordingCollection.objects.create(
+                user=self.user,
+                title=self.title or "Untitled Collection",
+                description=self.description or "No description"
+            )
+            # Save the collection immediately to ensure it's available
+            self.collection.save()
+
+        # Proceed with saving the VoiceRecording as usual
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return str(self.title) if self.title else "Voice Recording"
 
@@ -114,6 +128,14 @@ class VoiceSegment(BaseModel):
     )
     file = models.FileField(upload_to=segment_audio_upload_path)
     cover = models.FileField(upload_to=segment_audio_upload_path, blank=True)
+    title = models.CharField(max_length=255, blank=True, null=True)
+    slug = models.SlugField(max_length=255, unique=True, null=True, blank=True)
+    description = models.TextField(blank=True, null=True)
+    language = models.CharField(
+        max_length=2,
+        choices=LanguageChoices.choices,
+        default=LanguageChoices.ENGLISH,
+    )
     duration_ms = models.BigIntegerField(blank=True, null=True)
     start_time_ms = models.BigIntegerField(blank=True, null=True)
     end_time_ms = models.BigIntegerField(blank=True, null=True)
@@ -154,15 +176,6 @@ class VoiceTranscription(BaseModel):
 
 
 # Signal Handlers
-
-@receiver(pre_save, sender=VoiceRecordingCollection)
-def pre_save_voice_recording_collection(sender, instance, **kwargs):
-    # Set slug if not set
-    if instance.id and instance.title and not instance.slug:
-        first_octet = str(instance.id).split('-')[0]
-        instance.slug = f"{slugify(instance.title).replace('-', '_')}_{first_octet}"
-
-
 @receiver(pre_save, sender=VoiceRecording)
 def pre_save_voice_recording(sender, instance, **kwargs):
     # Extract audio metadata from Mutagen
@@ -174,18 +187,3 @@ def pre_save_voice_recording(sender, instance, **kwargs):
         if not instance.metadata:
             instance.metadata = {}
         instance.metadata['audio'] = audio_meta_data
-
-
-@receiver(post_save, sender=VoiceRecording)
-def post_save_voice_recording(sender, instance, created, **kwargs):
-    # On creation, check if a collection exists and create one if not
-    if created and not instance.collection:
-        # Create a new VoiceRecordingCollection with the recording's title and description
-        collection = VoiceRecordingCollection.objects.create(
-            user=instance.user,
-            title=instance.title or "Untitled Collection",
-            description=instance.description or "No description",
-        )
-        # Update the recording with the newly created collection
-        instance.collection = collection
-        instance.save()
