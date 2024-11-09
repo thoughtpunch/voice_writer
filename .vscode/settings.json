@@ -1,6 +1,31 @@
 {
+  "[typescript]": {
+    "editor.defaultFormatter": "denoland.vscode-deno"
+  },
+  "cSpell.words": [
+    "GRAPHENE",
+    "SUPABASE"
+  ],
+  "deno.enablePaths": [
+    "supabase/functions"
+  ],
+  "deno.lint": true,
+  "deno.unstable": [
+    "bare-node-builtins",
+    "byonm",
+    "sloppy-imports",
+    "unsafe-proto",
+    "webgpu",
+    "broadcast-channel",
+    "worker-options",
+    "cron",
+    "kv",
+    "ffi",
+    "fs",
+    "http",
+    "net"
+  ],
   "python.analysis.typeCheckingMode": "basic",
-  "cSpell.words": ["GRAPHENE", "SUPABASE"],
   "yaml.schemas": {
     "https://render.com/schema/render.yaml.json": "file:///Users/danielbarrett/sites/voice_writer/render.yml"
   }

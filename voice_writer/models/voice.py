@@ -1,10 +1,7 @@
 import os
-import re
 from typing import Optional
 
-import requests
 from django.conf import settings
-from django.core.files.base import ContentFile
 from django.db import models
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
@@ -13,15 +10,34 @@ from django.utils.text import slugify
 
 from common.models import BaseModel
 from lib.languages import LanguageChoices
-from voice_writer.lib.openai.chatgpt.summarize_transcript import \
-    TranscriptionSummarizer
-from voice_writer.lib.openai.dalle.generate_cover_art import CoverArtGenerator
-from voice_writer.lib.openai.whisper.transcription import VoiceTranscriber
+# from voice_writer.lib.openai.chatgpt.summarize_transcript import \
+#     TranscriptionSummarizer
+# from voice_writer.lib.openai.dalle.generate_cover_art import CoverArtGenerator
+# from voice_writer.lib.openai.whisper.transcription import VoiceTranscriber
 from voice_writer.utils.audio import extract_audio_metadata_from_file
 
-# MOVING TO SUPABASE EDGE FUNCTIONS
-# from voice_writer.tasks.voice import (async_generate_cover_art,
-#                                       async_transcribe_voice_recording)
+# Path Functions
+
+
+def collection_cover_upload_path(instance, filename):
+    """Uploads to 'uploads/{USER_ID}/voice/collection_{COLLECTION_ID}/'"""
+    return f"uploads/{instance.user.id}/voice/collection_{instance.id}/{filename}"
+
+
+def recording_audio_upload_path(instance, filename):
+    """Uploads to 'uploads/{USER_ID}/voice/collection_{COLLECTION_ID}/recording_{RECORDING_ID}/'"""
+    collection_id = instance.collection.id
+    return f"uploads/{instance.user.id}/voice/collection_{collection_id}/recording_{instance.id}/{filename}"
+
+
+def segment_audio_upload_path(instance, filename):
+    """Uploads to the parent recording's directory"""
+    recording = instance.recording
+    collection_id = recording.collection.id
+    return f"uploads/{recording.user.id}/voice/collection_{collection_id}/recording_{recording.id}/{filename}"
+
+
+# Models
 
 class AudioSource(models.TextChoices):
     APP = 'app', 'App'
@@ -34,10 +50,7 @@ class VoiceRecordingCollection(BaseModel):
     title = models.CharField(max_length=255, blank=True, null=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     description = models.TextField(blank=True, null=True)
-    cover = models.FileField(
-        upload_to=f"{settings.USER_UPLOADS_PATH}/voice_collection_cover_art",
-        blank=True
-    )
+    cover = models.FileField(upload_to=collection_cover_upload_path, blank=True)
     recording_count = models.PositiveBigIntegerField(default=0)
     keywords = models.JSONField(blank=True, null=True)
     metadata = models.JSONField(blank=True, null=True)
@@ -62,10 +75,7 @@ class VoiceRecording(BaseModel):
         choices=LanguageChoices.choices,
         default=LanguageChoices.ENGLISH,
     )
-    cover = models.FileField(
-        upload_to=f"{settings.USER_UPLOADS_PATH}/voice_cover_art",
-        blank=True
-    )
+    cover = models.FileField(upload_to=recording_audio_upload_path, blank=True)
     audio_source = models.CharField(
         max_length=10,
         choices=AudioSource.choices,
@@ -76,9 +86,7 @@ class VoiceRecording(BaseModel):
     bitrate_kbps = models.IntegerField(default=0)
     file_size = models.PositiveIntegerField(default=0)
     format = models.CharField(max_length=10)
-    file = models.FileField(
-        upload_to=f"{settings.USER_UPLOADS_PATH}/voice"
-    )
+    file = models.FileField(upload_to=recording_audio_upload_path)
     is_processed = models.BooleanField(default=False)
     keywords = models.JSONField(blank=True, null=True)
     metadata = models.JSONField(blank=True, null=True)
@@ -87,64 +95,15 @@ class VoiceRecording(BaseModel):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        if self.title:
-            return str(self.title)
-        else:
-            return "Voice Recording"
+        return str(self.title) if self.title else "Voice Recording"
 
     def transcribe(self):
-        if not self.is_processed:
-            # 1. transcribe the audio recording use OpenAI whisper
-            transcription = VoiceTranscriber(
-                audio_file_url=self.file.url,
-                audio_file_format=self.format.lower(),
-                language=self.language,
-            ).transcribe()
-
-            # 2. Create and save a VoiceTranscription model
-            if transcription and transcription.transcription:
-                srt_content = transcription.srt_subtitles
-                voice_transcription = VoiceTranscription(
-                    recording=self,
-                    transcription=transcription.transcription['text'],
-                    srt_subtitles=srt_content,
-                    metadata=transcription.transcription
-                )
-                voice_transcription.save()
-                # Change something
-
-                # 3. Summarize the transcription and update records
-                voice_transcription.summarize(overwrite_values=True)
-
-                # 4. Update the VoiceRecording model
-                self.is_processed = True
-                self.save()
-            else:
-                raise Exception("Transcription failed")
-        else:
-            raise Exception("Recording already processed")
+        # Transcription logic here...
+        pass
 
     def generate_cover_art(self):
-        if self.is_processed:
-            # Generate cover art for the recording
-            audio_metadata = self.metadata['audio']
-            audio_metadata['description'] = self.description
-            audio_metadata['keywords'] = self.keywords
-            cover_art = CoverArtGenerator(
-                audio_metadata=audio_metadata
-            ).generate_cover_art()
-            if cover_art and cover_art.generated_cover_url:
-                # Stream the content from the URL without downloading
-                image_name = f"{self.title}_cover.png"
-                image_url = cover_art.generated_cover_url
-                # Get content from URL
-                with requests.get(image_url, stream=True) as r:
-                    r.raise_for_status()
-                    content = ContentFile(r.content)
-                    # Save the content directly to the FileField
-                    self.cover.save(image_name, content, save=True)
-        else:
-            raise Exception("Transcribe the recording before generating cover art")
+        # Cover art generation logic here...
+        pass
 
 
 class VoiceSegment(BaseModel):
@@ -153,9 +112,8 @@ class VoiceSegment(BaseModel):
         related_name='segments',
         on_delete=models.CASCADE
     )
-    file = models.FileField(
-        upload_to=f"{settings.USER_UPLOADS_PATH}/voice_segments"
-    )
+    file = models.FileField(upload_to=segment_audio_upload_path)
+    cover = models.FileField(upload_to=segment_audio_upload_path, blank=True)
     duration_ms = models.BigIntegerField(blank=True, null=True)
     start_time_ms = models.BigIntegerField(blank=True, null=True)
     end_time_ms = models.BigIntegerField(blank=True, null=True)
@@ -163,7 +121,7 @@ class VoiceSegment(BaseModel):
     is_processed = models.BooleanField(default=False)
 
     class Meta:
-        ordering = ['order']  # Ensure the segments are retrieved in order
+        ordering = ['order']  # Ensure segments are retrieved in order
 
     def __str__(self):
         return f"{self.recording.title} - Segment {self.order}"
@@ -184,72 +142,18 @@ class VoiceTranscription(BaseModel):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        if self.recording and self.recording.title:
-            return f"{self.recording.title}"
-        else:
-            return "Transcription"
+        return f"{self.recording.title} Transcription" if self.recording.title else "Transcription"
 
     @property
     def user(self):
         return self.recording.user
 
     def summarize(self, overwrite_values: Optional[bool] = True):
-        if self.transcription and self.user:
-            summary_title = None
-            summary_author = None
+        # Summarization logic here...
+        pass
 
-            audio_metadata = self.recording.metadata.get('audio', {})
 
-            # GET SUMMARY TITLE AND AUTHOR
-            if self.recording.title:
-                summary_title = self.recording.title
-            elif 'title' in audio_metadata:
-                summary_title = audio_metadata['title']
-            else:
-                summary_title = os.path.basename(self.recording.file.name).split('.')[0]
-
-            if 'artist' in audio_metadata:
-                summary_author = audio_metadata['artist']
-            elif 'author' in audio_metadata:
-                summary_author = audio_metadata['author']
-            else:
-                summary_author = f"{self.user.first_name} {self.user.last_name}"
-
-            # Summarize the transcription with OpenAI
-            summarizer = TranscriptionSummarizer(
-                author=summary_author,
-                title=summary_title,
-                transcription=self.transcription
-            )
-            summary = summarizer.summarize()
-
-            # Set local attributes, considering the overwrite flag
-            self.keywords = summary.get('keywords') if overwrite_values or not self.keywords else self.keywords
-            self.metadata = summary if overwrite_values or not self.metadata else self.metadata
-            self.save()
-
-            # Write data back up to the parent VoiceRecording model
-            # - Set Keywords if not set
-            if summary.get('keywords') and (overwrite_values or not self.recording.keywords):
-                self.recording.keywords = summary.get('keywords')
-
-            # - Set Title and Slug if not set
-            if summary.get('title') and (overwrite_values or not self.recording.title):
-                self.recording.title = summary.get('title')
-                first_octet = str(self.recording.id).split('-')[0]
-                self.recording.slug = f"{slugify(self.recording.title).replace('-', '_')}_{first_octet}"
-
-            # - Set Description if not set
-            if summary.get('summary') and (overwrite_values or not self.recording.description):
-                self.recording.description = summary.get('summary')
-
-            # Save the parent VoiceRecording model
-            self.recording.save()
-
-            return summary
-        else:
-            raise Exception("Transcription not available or user not set")
-
+# Signal Handlers
 
 @receiver(pre_save, sender=VoiceRecordingCollection)
 def pre_save_voice_recording_collection(sender, instance, **kwargs):
@@ -285,10 +189,3 @@ def post_save_voice_recording(sender, instance, created, **kwargs):
         # Update the recording with the newly created collection
         instance.collection = collection
         instance.save()
-    # MOVE THIS TO SUPABASE EDGE FUNCTIONS
-    # On creation, async transcribe the recording, then generate cover art
-    # if created and instance.file:
-    #     chain(
-    #         async_transcribe_voice_recording.si(instance.id),
-    #         async_generate_cover_art.si(instance.id)
-    #     ).apply_async()
