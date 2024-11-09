@@ -1,27 +1,26 @@
 import os
 import re
+from typing import Optional
+
 import requests
 from celery import chain
-from typing import Optional
-from common.models import BaseModel
-from django.db import models
-from django.db.models.signals import pre_save, post_save
-from django.dispatch import receiver
-from django.core.files.base import ContentFile
 from django.conf import settings
+from django.core.files.base import ContentFile
+from django.db import models
+from django.db.models.signals import post_save, pre_save
+from django.dispatch import receiver
 from django.utils import timezone
 from django.utils.text import slugify
+
+from common.models import BaseModel
 from lib.languages import LanguageChoices
-from voice_writer.lib.openai.whisper.transcription import VoiceTranscriber
-from voice_writer.lib.openai.dalle.generate_cover_art import CoverArtGenerator
-from voice_writer.lib.openai.chatgpt.summarize_transcript import (
+from voice_writer.lib.openai.chatgpt.summarize_transcript import \
     TranscriptionSummarizer
-)
+from voice_writer.lib.openai.dalle.generate_cover_art import CoverArtGenerator
+from voice_writer.lib.openai.whisper.transcription import VoiceTranscriber
+from voice_writer.tasks.voice import (async_generate_cover_art,
+                                      async_transcribe_voice_recording)
 from voice_writer.utils.audio import extract_audio_metadata_from_file
-from voice_writer.tasks.voice import (
-    async_transcribe_voice_recording,
-    async_generate_cover_art
-)
 
 
 class AudioSource(models.TextChoices):
@@ -50,7 +49,9 @@ class VoiceRecording(BaseModel):
     collection = models.ForeignKey(
         VoiceRecordingCollection,
         related_name='recordings',
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
     )
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     title = models.CharField(max_length=255, blank=True, null=True)
@@ -273,6 +274,17 @@ def pre_save_voice_recording(sender, instance, **kwargs):
 
 @receiver(post_save, sender=VoiceRecording)
 def post_save_voice_recording(sender, instance, created, **kwargs):
+    # On creation, check if a collection exists and create one if not
+    if created and not instance.collection:
+        # Create a new VoiceRecordingCollection with the recording's title and description
+        collection = VoiceRecordingCollection.objects.create(
+            user=instance.user,
+            title=instance.title or "Untitled Collection",
+            description=instance.description or "No description",
+        )
+        # Update the recording with the newly created collection
+        instance.collection = collection
+        instance.save()
     # On creation, async transcribe the recording, then generate cover art
     if created and instance.file:
         chain(

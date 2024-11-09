@@ -1,7 +1,7 @@
 # voice_writer/views/user.py
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import login
+from django.contrib.auth import login, logout
 from django.shortcuts import redirect, render
 from supabase import Client, create_client
 
@@ -44,7 +44,7 @@ def signup_user(request):
                 )
                 login(request, user)  # Automatically log in the new user
                 messages.success(request, "Signup successful!")
-                return redirect('home')  # Redirect to the home page after signup
+                return redirect('index')  # Redirect to the home page after signup
             else:
                 messages.error(request, "Signup failed. Please try again.")
         except Exception as e:
@@ -78,7 +78,7 @@ def login_user(request):
 
         # Log in the user with Django's session management
         login(request, user)
-        return redirect('home')  # Redirect to the home page after login
+        return redirect('index')  # Redirect to the home page after login
 
     return render(request, 'voice_writer/user/login.html')  # Render login page if GET request
 

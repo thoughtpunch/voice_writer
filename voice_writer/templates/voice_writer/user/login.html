@@ -1,27 +1,50 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login</title>
-  </head>
-  <body>
-    <h1>Login</h1>
-    <form method="post" action="{% url 'login' %}">
+{% extends "voice_writer/base.html" %}{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <h1 class="text-center">Login</h1>
+    <form
+      method="post"
+      action="{% url 'login' %}"
+      class="p-4 shadow-sm bg-white rounded"
+    >
       {% csrf_token %}
-      <label for="email">Email:</label>
-      <input type="email" name="email" required />
 
-      <label for="password">Password:</label>
-      <input type="password" name="password" required />
+      <div class="mb-3">
+        <label for="email" class="form-label">Email</label>
+        <input
+          type="email"
+          class="form-control"
+          name="email"
+          id="email"
+          required
+        />
+      </div>
 
-      <button type="submit">Login</button>
+      <div class="mb-3">
+        <label for="password" class="form-label">Password</label>
+        <input
+          type="password"
+          class="form-control"
+          name="password"
+          id="password"
+          required
+        />
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100">Login</button>
     </form>
 
-    <p>Don't have an account? <a href="{% url 'signup' %}">Sign up</a></p>
+    <p class="text-center mt-3">
+      Don't have an account? <a href="{% url 'signup' %}">Sign up</a>
+    </p>
 
-    {% for message in messages %}
-    <p>{{ message }}</p>
-    {% endfor %}
-  </body>
-</html>
+    {% if messages %}
+    <div class="mt-3">
+      {% for message in messages %}
+      <div class="alert alert-info">{{ message }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
