@@ -3,7 +3,6 @@ import re
 from typing import Optional
 
 import requests
-from celery import chain
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.db import models
@@ -18,10 +17,11 @@ from voice_writer.lib.openai.chatgpt.summarize_transcript import \
     TranscriptionSummarizer
 from voice_writer.lib.openai.dalle.generate_cover_art import CoverArtGenerator
 from voice_writer.lib.openai.whisper.transcription import VoiceTranscriber
-from voice_writer.tasks.voice import (async_generate_cover_art,
-                                      async_transcribe_voice_recording)
 from voice_writer.utils.audio import extract_audio_metadata_from_file
 
+# MOVING TO SUPABASE EDGE FUNCTIONS
+# from voice_writer.tasks.voice import (async_generate_cover_art,
+#                                       async_transcribe_voice_recording)
 
 class AudioSource(models.TextChoices):
     APP = 'app', 'App'
@@ -285,9 +285,10 @@ def post_save_voice_recording(sender, instance, created, **kwargs):
         # Update the recording with the newly created collection
         instance.collection = collection
         instance.save()
+    # MOVE THIS TO SUPABASE EDGE FUNCTIONS
     # On creation, async transcribe the recording, then generate cover art
-    if created and instance.file:
-        chain(
-            async_transcribe_voice_recording.si(instance.id),
-            async_generate_cover_art.si(instance.id)
-        ).apply_async()
+    # if created and instance.file:
+    #     chain(
+    #         async_transcribe_voice_recording.si(instance.id),
+    #         async_generate_cover_art.si(instance.id)
+    #     ).apply_async()
