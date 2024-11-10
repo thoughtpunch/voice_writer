@@ -20,20 +20,20 @@ from voice_writer.utils.audio import extract_audio_metadata_from_file
 
 def collection_cover_upload_path(instance, filename):
     """Uploads to 'uploads/{USER_ID}/voice/collection_{COLLECTION_ID}/'"""
-    return f"uploads/{instance.user.id}/voice/collection_{instance.id}/{filename}"
+    return f"uploads/user_{instance.user.id}/voice/collection_{instance.id}/{filename}"
 
 
 def recording_audio_upload_path(instance, filename):
     """Uploads to 'uploads/{USER_ID}/voice/collection_{COLLECTION_ID}/recording_{RECORDING_ID}/'"""
     collection_id = instance.collection.id
-    return f"uploads/{instance.user.id}/voice/collection_{collection_id}/recording_{instance.id}/{filename}"
+    return f"uploads/user_{instance.user.id}/voice/collection_{collection_id}/recording_{instance.id}/{filename}"
 
 
 def segment_audio_upload_path(instance, filename):
     """Uploads to the parent recording's directory"""
     recording = instance.recording
     collection_id = recording.collection.id
-    return f"uploads/{recording.user.id}/voice/collection_{collection_id}/recording_{recording.id}/{filename}"
+    return f"uploads/user_{recording.user.id}/voice/collection_{collection_id}/recording_{recording.id}/{filename}"
 
 
 # Models
@@ -49,7 +49,7 @@ class VoiceRecordingCollection(BaseModel):
     title = models.CharField(max_length=255, blank=True, null=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
     description = models.TextField(blank=True, null=True)
-    cover = models.FileField(upload_to=collection_cover_upload_path, blank=True)
+    cover = models.FileField(upload_to=collection_cover_upload_path, blank=True, max_length=255)
     recording_count = models.PositiveBigIntegerField(default=0)
     keywords = models.JSONField(blank=True, null=True)
     metadata = models.JSONField(blank=True, null=True)
@@ -74,7 +74,7 @@ class VoiceRecording(BaseModel):
         choices=LanguageChoices.choices,
         default=LanguageChoices.ENGLISH,
     )
-    cover = models.FileField(upload_to=recording_audio_upload_path, blank=True)
+    cover = models.FileField(upload_to=recording_audio_upload_path, blank=True, max_length=255)
     audio_source = models.CharField(
         max_length=10,
         choices=AudioSource.choices,
@@ -85,7 +85,7 @@ class VoiceRecording(BaseModel):
     bitrate_kbps = models.IntegerField(default=0)
     file_size = models.PositiveIntegerField(default=0)
     format = models.CharField(max_length=10)
-    file = models.FileField(upload_to=recording_audio_upload_path)
+    file = models.FileField(upload_to=recording_audio_upload_path, max_length=255)
     is_processed = models.BooleanField(default=False)
     keywords = models.JSONField(blank=True, null=True)
     metadata = models.JSONField(blank=True, null=True)
@@ -126,8 +126,8 @@ class VoiceSegment(BaseModel):
         related_name='segments',
         on_delete=models.CASCADE
     )
-    file = models.FileField(upload_to=segment_audio_upload_path)
-    cover = models.FileField(upload_to=segment_audio_upload_path, blank=True)
+    file = models.FileField(upload_to=segment_audio_upload_path, max_length=255)
+    cover = models.FileField(upload_to=segment_audio_upload_path, blank=True, max_length=255)
     title = models.CharField(max_length=255, blank=True, null=True)
     slug = models.SlugField(max_length=255, unique=True, null=True, blank=True)
     description = models.TextField(blank=True, null=True)
