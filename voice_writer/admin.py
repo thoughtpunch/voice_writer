@@ -1,25 +1,21 @@
-from django.contrib import admin
-from django.utils.html import format_html
-from django.shortcuts import render, redirect
-from django.urls import path
 import datetime
+
+from django.contrib import admin
+from django.shortcuts import redirect, render
+from django.urls import path
+from django.utils.html import format_html
+
 from voice_writer.forms.voice import VoiceRecordingCollectionForm
-from .models import (
-    Author,
-    User,
-    VoiceRecording,
-    VoiceRecordingCollection,
-    VoiceTranscription,
-    Manuscript,
-    Section,
-    Document
-)
+
+from .models import (Author, Document, Manuscript, Section, User,
+                     VoiceRecording, VoiceRecordingCollection,
+                     VoiceTranscription)
 
 
 class VoiceRecordingInline(admin.TabularInline):
     model = VoiceRecording
     extra = 0  # Do not display any empty forms by default
-    fields = ['title', 'slug', 'file', 'duration_ms', 'format', 'is_processed', 'collection']
+    fields = ['title', 'file', 'duration_ms', 'format', 'is_processed', 'collection']
     readonly_fields = ['duration_ms', 'file_size', 'format', 'is_processed']
     show_change_link = True  # Allows navigating to the full change form of each recording
 
@@ -112,7 +108,6 @@ class VoiceRecordingCollectionAdmin(admin.ModelAdmin):
     inlines = [VoiceRecordingInline]
     list_display = (
         'title',
-        'slug',
         'description',
         'cover',
         'recording_count',
@@ -120,11 +115,10 @@ class VoiceRecordingCollectionAdmin(admin.ModelAdmin):
         'created_at'
     )
     search_fields = ('title', 'description', 'user__username')
-    list_filter = ('title', 'slug', 'description', 'user', 'created_at')
+    list_filter = ('title', 'description', 'user', 'created_at')
     readonly_fields = (
         'created_at',
         'updated_at',
-        'slug',
         'recording_count',
     )
     form = VoiceRecordingCollectionForm
@@ -147,8 +141,7 @@ class VoiceRecordingCollectionAdmin(admin.ModelAdmin):
                     VoiceRecording.objects.create(
                         collection=voice_recording_collection,
                         user=voice_recording_collection.user,
-                        file=file,
-                        slug=None, # This will be set automatically
+                        file=file
                     )
                     voice_recording_collection.recording_count += 1
                     voice_recording_collection.save()

@@ -1,9 +1,8 @@
-import os
 from typing import Optional
 
 from django.conf import settings
 from django.db import models
-from django.db.models.signals import post_save, pre_save
+from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from django.utils import timezone
 
@@ -47,7 +46,6 @@ class AudioSource(models.TextChoices):
 class VoiceRecordingCollection(BaseModel):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     title = models.CharField(max_length=255, blank=True, null=True)
-    slug = models.SlugField(max_length=255, unique=True, blank=True)
     description = models.TextField(blank=True, null=True)
     cover = models.FileField(upload_to=collection_cover_upload_path, blank=True, max_length=255)
     recording_count = models.PositiveBigIntegerField(default=0)
@@ -67,21 +65,32 @@ class VoiceRecording(BaseModel):
     )
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     title = models.CharField(max_length=255, blank=True, null=True)
-    slug = models.SlugField(max_length=255, unique=True, null=True, blank=True)
     description = models.TextField(blank=True, null=True)
     language = models.CharField(
         max_length=2,
         choices=LanguageChoices.choices,
         default=LanguageChoices.ENGLISH,
+        blank=True,
+        null=True
     )
-    cover = models.FileField(upload_to=recording_audio_upload_path, blank=True, max_length=255)
+    cover = models.FileField(
+        upload_to=recording_audio_upload_path,
+        max_length=255,
+        blank=True,
+        null=True
+        )
     audio_source = models.CharField(
         max_length=10,
         choices=AudioSource.choices,
         default=AudioSource.APP,
+        blank=True,
+        null=True
     )
-    duration_ms = models.BigIntegerField(default=0)
-    recorded_at = models.DateTimeField(default=timezone.now)
+    duration_ms = models.BigIntegerField(
+        default=0,
+        blank=True,
+        null=True
+    )
     bitrate_kbps = models.IntegerField(default=0)
     file_size = models.PositiveIntegerField(default=0)
     format = models.CharField(max_length=10)
@@ -129,7 +138,6 @@ class VoiceSegment(BaseModel):
     file = models.FileField(upload_to=segment_audio_upload_path, max_length=255)
     cover = models.FileField(upload_to=segment_audio_upload_path, blank=True, max_length=255)
     title = models.CharField(max_length=255, blank=True, null=True)
-    slug = models.SlugField(max_length=255, unique=True, null=True, blank=True)
     description = models.TextField(blank=True, null=True)
     language = models.CharField(
         max_length=2,
